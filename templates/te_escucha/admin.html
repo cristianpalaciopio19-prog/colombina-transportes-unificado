@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel PQR — Colombina te Escucha</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  body { font-family: 'Inter', sans-serif; background: #fbf8f2; margin: 0; padding: 30px 20px; color: #22243a; }
+  h1 { font-family: 'Fredoka', sans-serif; color: #293184; }
+  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 6px 20px rgba(41,49,132,0.1); }
+  th, td { padding: 10px 12px; text-align: left; font-size: 13.5px; border-bottom: 1px solid #eee; vertical-align: top; }
+  th { background: #293184; color: #fff; font-weight: 600; }
+  tr:last-child td { border-bottom: none; }
+  .tag { padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; color: #fff; }
+  .tag-Petición { background: #4a5cc9; }
+  .tag-Queja { background: #e11d1f; }
+  .tag-Reclamo { background: #b3161a; }
+  .tag-Sugerencia { background: #f0a93b; }
+  .tag-Felicitación { background: #2ea043; }
+  .empty { text-align: center; color: #888; padding: 40px; }
+  .top { display: flex; justify-content: space-between; align-items: center; }
+  .count { color: #6b6d85; font-size: 14px; }
+  .acciones { display: flex; gap: 8px; align-items: center; white-space: nowrap; }
+  .btn-ver { padding: 6px 12px; border-radius: 999px; background: #293184; color: #fff; text-decoration: none; font-size: 12.5px; font-weight: 600; }
+  .btn-ver:hover { background: #1a1f5c; }
+  .acciones form { margin: 0; }
+  .btn-eliminar { padding: 6px 12px; border-radius: 999px; background: #fdeaea; color: #e11d1f; border: 1px solid #f7c3c3; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+  .btn-eliminar:hover { background: #f7c3c3; }
+</style>
+</head>
+<body>
+  <div class="top">
+    <h1>Registros de PQR</h1>
+    <span class="count">{{ registros|length }} registro(s)</span>
+  </div>
+
+  {% if registros %}
+  <table>
+    <tr>
+      <th>Fecha</th>
+      <th>Nombre</th>
+      <th>Ruta</th>
+      <th>Tipo</th>
+      <th>Acciones</th>
+    </tr>
+    {% for r in registros %}
+    <tr>
+      <td>{{ r['fecha'] }}</td>
+      <td>{{ r['nombre'] }}</td>
+      <td>{{ r['ruta'] }} — {{ r['municipio'] }}</td>
+      <td><span class="tag tag-{{ r['tipo_pqr'] }}">{{ r['tipo_pqr'] }}</span></td>
+      <td class="acciones">
+        <a class="btn-ver" href="{{ url_for('te_escucha.admin_detalle', pqr_id=r['id'], clave=clave) }}">Ver detalle</a>
+        <form method="POST" action="{{ url_for('te_escucha.admin_eliminar', pqr_id=r['id']) }}" onsubmit="return confirm('¿Eliminar este registro de forma permanente?');">
+          <input type="hidden" name="clave" value="{{ clave }}">
+          <button type="submit" class="btn-eliminar">Eliminar</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <div class="empty">Aún no hay registros de PQR.</div>
+  {% endif %}
+</body>
+</html>

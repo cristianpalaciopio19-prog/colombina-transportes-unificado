@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Acceso admin — Colombina te Escucha</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  body { font-family: 'Inter', sans-serif; background: #fbf8f2; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+  .box { background: #fff; padding: 32px; border-radius: 14px; box-shadow: 0 10px 30px rgba(41,49,132,0.15); width: 320px; text-align: center; }
+  h1 { font-family: 'Fredoka', sans-serif; font-size: 18px; color: #293184; margin-bottom: 18px; }
+  input { width: 100%; padding: 10px; border-radius: 8px; border: 1.5px solid #d8d3c4; margin-bottom: 12px; box-sizing: border-box; }
+  button { width: 100%; padding: 11px; border: none; border-radius: 999px; background: #e11d1f; color: #fff; font-weight: 600; cursor: pointer; }
+</style>
+</head>
+<body>
+  <form class="box" method="GET" action="{{ url_for('te_escucha.admin') }}">
+    <h1>Panel de PQR — acceso restringido</h1>
+    <input type="password" name="clave" placeholder="Clave de administrador" required>
+    <button type="submit">Entrar</button>
+  </form>
+</body>
+</html>

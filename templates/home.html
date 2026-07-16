@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Colombina Transportes | Portal</title>
+<style>
+  :root {
+    --navy: #0B2C6B;
+    --blue: #1B5FC4;
+    --sky: #CFE0FA;
+    --gold: #F2A900;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: 'Inter', 'Poppins', Arial, sans-serif;
+    background: linear-gradient(160deg, var(--navy) 0%, var(--blue) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .wrap {
+    width: 100%;
+    max-width: 880px;
+    text-align: center;
+    color: #fff;
+  }
+  h1 {
+    font-family: 'Poppins', sans-serif;
+    font-size: 2rem;
+    margin-bottom: 4px;
+  }
+  p.subtitle {
+    color: var(--sky);
+    margin-top: 0;
+    margin-bottom: 40px;
+  }
+  .cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+  @media (max-width: 640px) {
+    .cards { grid-template-columns: 1fr; }
+  }
+  .card {
+    background: #fff;
+    color: var(--navy);
+    border-radius: 16px;
+    padding: 32px 24px;
+    text-decoration: none;
+    display: block;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    transition: transform 0.15s ease;
+  }
+  .card:hover {
+    transform: translateY(-4px);
+  }
+  .card .icon {
+    font-size: 2.5rem;
+    margin-bottom: 12px;
+  }
+  .card h2 {
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.25rem;
+    margin: 0 0 8px;
+    color: var(--navy);
+  }
+  .card p {
+    margin: 0;
+    color: #333;
+    font-size: 0.95rem;
+  }
+  .card .tag {
+    display: inline-block;
+    margin-top: 16px;
+    background: var(--gold);
+    color: var(--navy);
+    font-weight: 600;
+    font-size: 0.8rem;
+    padding: 6px 14px;
+    border-radius: 999px;
+  }
+  footer {
+    margin-top: 40px;
+    color: var(--sky);
+    font-size: 0.8rem;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Colombina Transportes</h1>
+    <p class="subtitle">Portal unificado de aplicaciones de transporte</p>
+
+    <div class="cards">
+      <a class="card" href="{{ url_for('ruta_finder.index') }}">
+        <div class="icon">🚌</div>
+        <h2>Buscador de Rutas</h2>
+        <p>Encuentra la ruta de bus más cercana a tu dirección entre las 24 rutas operativas.</p>
+        <span class="tag">Abrir</span>
+      </a>
+
+      <a class="card" href="{{ url_for('te_escucha.index') }}">
+        <div class="icon">📝</div>
+        <h2>Colombina Te Escucha</h2>
+        <p>Registra tus peticiones, quejas o reclamos (PQR) sobre el servicio de transporte.</p>
+        <span class="tag">Abrir</span>
+      </a>
+    </div>
+
+    <footer>Colombina S.A. &middot; Planta Confitería PL1</footer>
+  </div>
+</body>
+</html>

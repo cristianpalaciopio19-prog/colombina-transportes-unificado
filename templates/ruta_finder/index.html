@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Buscador de Ruta Más Cercana — Colombina</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cb-red: #0B3D91;
+    --cb-red-dark: #082C6B;
+    --cb-gold: #4FA8DA;
+    --cb-gold-dark: #2E7FB0;
+    --ink: #1A2130;
+    --slate: #5D6674;
+    --bg: #F2F5F9;
+    --surface: #FFFFFF;
+    --line: #DCE3EC;
+    --zona-tulua: #A80513;
+    --zona-roldanillo: #0E6E68;
+    --zona-zarzal: #F2A900;
+    --zona-andalucia: #1D3557;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: 'Inter', Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+  }
+  h1, h2, h3, .brand-word { font-family: 'Poppins', 'Inter', sans-serif; }
+
+  header {
+    background: linear-gradient(120deg, var(--cb-red-dark) 0%, var(--cb-red) 65%);
+    color: white;
+    padding: 0;
+    position: relative;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+  }
+  header .header-inner {
+    padding: 18px 26px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .brand-mark {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-family: 'Poppins', sans-serif;
+    color: var(--cb-red-dark);
+    font-size: 1.05rem;
+    flex-shrink: 0;
+  }
+  header h1 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+  }
+  header .subtitle {
+    font-size: 0.78rem;
+    color: rgba(255,255,255,0.85);
+    font-weight: 500;
+    margin-top: 2px;
+  }
+  .header-meta {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.8);
+    text-align: right;
+    font-weight: 500;
+  }
+  .gold-rule {
+    height: 4px;
+    background: linear-gradient(90deg, var(--cb-gold) 0%, var(--cb-gold-dark) 100%);
+  }
+
+  .container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    padding: 18px;
+    max-width: 1400px;
+    margin: 0 auto;
+    align-items: flex-start;
+  }
+  .panel {
+    background: var(--surface);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(20,20,20,0.06), 0 6px 18px rgba(20,20,20,0.05);
+    border: 1px solid var(--line);
+  }
+  .search-panel {
+    flex: 1 1 360px;
+    max-width: 400px;
+    padding: 18px;
+  }
+  .map-panel {
+    flex: 3 1 520px;
+    min-width: 300px;
+    padding: 0;
+    overflow: hidden;
+    position: relative;
+  }
+  #map {
+    height: 640px;
+    width: 100%;
+    background: #eef1ef;
+  }
+
+  .field-label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--cb-red-dark);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: block;
+    margin-bottom: 8px;
+  }
+  .input-row {
+    display: flex;
+    gap: 8px;
+  }
+  input[type="text"] {
+    flex: 1;
+    width: 100%;
+    padding: 11px 12px;
+    border: 1.5px solid var(--line);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-family: 'Inter', sans-serif;
+    background: #fbfaf8;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  input[type="text"]:focus {
+    outline: none;
+    border-color: var(--cb-red);
+    box-shadow: 0 0 0 3px rgba(11,61,145,0.14);
+    background: white;
+  }
+  .icon-btn {
+    flex-shrink: 0;
+    width: 44px;
+    border: 1.5px solid var(--line);
+    border-radius: 8px;
+    background: #fbfaf8;
+    cursor: pointer;
+    font-size: 1.05rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .icon-btn:hover { background: #f0eee8; border-color: var(--cb-gold); }
+
+  button.primary {
+    margin-top: 12px;
+    width: 100%;
+    padding: 12px 12px;
+    background: var(--cb-red);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.05s;
+    letter-spacing: 0.2px;
+  }
+  button.primary:hover { background: var(--cb-red-dark); }
+  button.primary:active { transform: translateY(1px); }
+  button.primary:disabled { background: #cfc9c2; cursor: not-allowed; }
+
+  #status {
+    margin-top: 12px;
+    font-size: 0.83rem;
+    color: var(--slate);
+    min-height: 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  #status.error { color: var(--cb-red-dark); font-weight: 600; }
+  .spinner {
+    width: 14px; height: 14px;
+    border: 2px solid var(--line);
+    border-top-color: var(--cb-red);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .candidatos { margin-top: 10px; }
+  .candidato-btn {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: #f7f6f2;
+    color: var(--ink);
+    border: 1px solid var(--line);
+    padding: 9px 11px;
+    border-radius: 8px;
+    margin-bottom: 6px;
+    font-size: 0.82rem;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .candidato-btn:hover { background: #eeece4; border-color: var(--cb-gold); }
+
+  .resultados { margin-top: 20px; }
+  .resultados h3 {
+    font-size: 0.85rem;
+    color: var(--ink);
+    margin: 0 0 10px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--cb-gold);
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .resultados h3 .count { font-size: 0.7rem; color: var(--slate); font-weight: 500; }
+
+  .ruta-card {
+    padding: 10px 12px;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    background: #f9f8f5;
+    border: 1px solid var(--line);
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, transform 0.1s;
+  }
+  .ruta-card:hover { border-color: var(--cb-gold); transform: translateX(2px); }
+  .ruta-card.top {
+    border-color: var(--cb-red);
+    background: #fff2f0;
+  }
+  .ruta-card-top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .ruta-card .nombre {
+    font-weight: 700;
+    color: var(--ink);
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .ruta-card .zona-dot {
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+  .ruta-card .zona {
+    font-size: 0.7rem;
+    color: var(--slate);
+    display: block;
+    margin-top: 2px;
+    margin-left: 15px;
+  }
+  .ruta-card .dist {
+    font-weight: 700;
+    color: var(--slate);
+    font-size: 0.82rem;
+    flex-shrink: 0;
+  }
+  .ruta-card.top .dist { color: var(--cb-red-dark); }
+  .ruta-card .badge {
+    background: var(--cb-red);
+    color: #FFFFFF;
+    font-size: 0.62rem;
+    font-weight: 800;
+    padding: 1px 6px;
+    border-radius: 20px;
+    margin-left: 6px;
+    text-transform: uppercase;
+  }
+  .bar-track {
+    margin-top: 8px;
+    height: 5px;
+    background: var(--line);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: var(--slate);
+    transition: width 0.5s ease;
+  }
+  .ruta-card.top .bar-fill { background: var(--cb-red); }
+
+  .legend {
+    margin-top: 18px;
+    font-size: 0.78rem;
+  }
+  .legend-title {
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: var(--ink);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    color: var(--slate);
+    transition: background 0.12s;
+    user-select: none;
+  }
+  .legend-item:hover { background: #f5f3ee; }
+  .legend-item.off { opacity: 0.4; }
+  .legend-swatch {
+    width: 16px;
+    height: 4px;
+    border-radius: 2px;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+
+  /* --- Mapa: controles y overlays --- */
+  .map-toolbar {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 500;
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(2px);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    padding: 6px 10px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--cb-red-dark);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .map-loading {
+    position: absolute;
+    inset: 0;
+    background: rgba(243,241,236,0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 800;
+    font-size: 0.85rem;
+    color: var(--slate);
+    font-weight: 600;
+    transition: opacity 0.2s;
+  }
+  .map-loading.hidden { opacity: 0; pointer-events: none; }
+
+  .leaflet-popup-content-wrapper {
+    border-radius: 10px;
+    font-family: 'Inter', sans-serif;
+  }
+  .leaflet-popup-content b { color: var(--cb-red-dark); }
+
+  .search-pin {
+    width: 26px; height: 26px;
+    border-radius: 50% 50% 50% 0;
+    background: var(--cb-red);
+    border: 2px solid white;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+    transform: rotate(-45deg);
+    position: relative;
+  }
+  .search-pin::after {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 8px; height: 8px;
+    background: white;
+    border-radius: 50%;
+    transform: translate(-50%,-50%) rotate(45deg);
+  }
+  .search-pin-pulse {
+    position: absolute;
+    top: -8px; left: -8px;
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    background: rgba(11,61,145,0.35);
+    animation: pulse 1.8s ease-out infinite;
+    transform: rotate(45deg);
+  }
+  @keyframes pulse {
+    0% { transform: rotate(45deg) scale(0.4); opacity: 0.8; }
+    100% { transform: rotate(45deg) scale(1.6); opacity: 0; }
+  }
+
+  .route-winner {
+    animation: dash 22s linear infinite;
+  }
+  @keyframes dash { to { stroke-dashoffset: -1000; } }
+
+  footer.app-footer {
+    text-align: center;
+    font-size: 0.72rem;
+    color: var(--slate);
+    padding: 14px;
+  }
+
+  /* --- Pestañas --- */
+  .tabbar {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 14px 18px 0;
+    display: flex;
+    gap: 8px;
+  }
+  .tab-btn {
+    padding: 9px 16px;
+    border-radius: 8px 8px 0 0;
+    border: 1px solid var(--line);
+    border-bottom: none;
+    background: #e7ecf3;
+    color: var(--slate);
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .tab-btn:hover { background: #dde5ef; }
+  .tab-btn.active {
+    background: var(--surface);
+    color: var(--cb-red);
+    border-color: var(--line);
+    box-shadow: 0 -2px 0 var(--cb-red) inset;
+  }
+
+  /* --- Panel Rutas ADM --- */
+  .adm-route-row {
+    padding: 11px 12px;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    background: #f9fafc;
+    border: 1px solid var(--line);
+    border-left: 5px solid var(--slate);
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .adm-route-row:hover { background: #f1f4f9; transform: translateX(2px); }
+  .adm-route-row.active { background: #eef3fb; }
+  .adm-route-row .adm-nombre {
+    font-weight: 700;
+    font-size: 0.87rem;
+    color: var(--ink);
+  }
+  .adm-route-row .adm-horario {
+    font-size: 0.74rem;
+    color: var(--slate);
+    margin-top: 2px;
+  }
+  .adm-route-row .adm-count {
+    font-size: 0.7rem;
+    color: var(--slate);
+    margin-top: 4px;
+  }
+  .adm-paradas {
+    margin-top: 10px;
+    max-height: 220px;
+    overflow-y: auto;
+    display: none;
+    border-top: 1px dashed var(--line);
+    padding-top: 8px;
+  }
+  .adm-route-row.active .adm-paradas { display: block; }
+  .adm-parada-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 0.74rem;
+    color: var(--slate);
+    padding: 3px 0;
+  }
+  .adm-parada-item .orden {
+    font-weight: 700;
+    color: var(--cb-red);
+    margin-right: 5px;
+  }
+  .adm-parada-item .hora { flex-shrink: 0; font-weight: 600; }
+  .adm-note {
+    font-size: 0.76rem;
+    color: var(--slate);
+    background: #eef3fb;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 14px;
+  }
+  .stop-num-marker {
+    background: white;
+    border-radius: 50%;
+    width: 20px; height: 20px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.62rem;
+    font-weight: 800;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  }
+  .stop-num-marker.final {
+    width: 24px; height: 24px;
+    font-size: 0.8rem;
+  }
+
+  @media (max-width: 720px) {
+    #map { height: 420px; }
+    .header-meta { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="brand">
+      <div class="brand-mark">C</div>
+      <div>
+        <h1 id="pageTitle">Buscador de Ruta Más Cercana</h1>
+        <div class="subtitle" id="pageSubtitle">Colombina S.A. · Rutas Operativas Valle del Cauca</div>
+      </div>
+    </div>
+    <div class="header-meta">
+      Zonas: Tuluá · Roldanillo · Zarzal · Andalucía/Bugalagrande<br>
+      24 rutas activas
+    </div>
+  </div>
+</header>
+<div class="gold-rule"></div>
+
+<div class="tabbar">
+  <button class="tab-btn active" id="tabOperativas">Rutas operativas</button>
+  <button class="tab-btn" id="tabAdm">Rutas administrativas</button>
+</div>
+
+<div class="container">
+  <div class="panel search-panel" id="panelOperativas">
+    <span class="field-label">Dirección a buscar</span>
+    <div class="input-row">
+      <input type="text" id="direccion" placeholder="Ej: Calle 10 #5-20, Zarzal, Valle del Cauca" />
+      <button class="icon-btn" id="btnGeo" title="Usar mi ubicación actual">📍</button>
+    </div>
+    <button class="primary" id="btnBuscar">Buscar ruta más cercana</button>
+    <div id="status"></div>
+    <div class="candidatos" id="candidatos"></div>
+
+    <div class="resultados" id="resultados" style="display:none;">
+      <h3>Rutas más cercanas <span class="count" id="countLabel"></span></h3>
+      <div id="listaRutas"></div>
+    </div>
+
+    <div class="legend" id="legend"></div>
+  </div>
+
+  <div class="panel search-panel" id="panelAdm" style="display:none;">
+    <span class="field-label">Dirección a buscar</span>
+    <div class="input-row">
+      <input type="text" id="direccionAdm" placeholder="Ej: Calle 10 #5-20, Zarzal, Valle del Cauca" />
+      <button class="icon-btn" id="btnGeoAdm" title="Usar mi ubicación actual">📍</button>
+    </div>
+    <button class="primary" id="btnBuscarAdm">Buscar ruta más cercana</button>
+    <div id="statusAdm"></div>
+    <div class="candidatos" id="candidatosAdm"></div>
+
+    <div class="resultados" id="resultadosAdm" style="display:none;">
+      <h3>Rutas más cercanas <span class="count" id="countLabelAdm"></span></h3>
+      <div id="listaRutasAdm"></div>
+    </div>
+
+    <div class="adm-note">Rutas fijas de transporte administrativo, con hora estimada de paso por cada parada. Clic en una ruta para ver su recorrido y paradas.</div>
+    <div id="listaAdm"></div>
+  </div>
+
+  <div class="panel map-panel">
+    <div class="map-toolbar" id="mapToolbar">🗺️ Rutas Colombina Operativos</div>
+    <div class="map-loading hidden" id="mapLoading">Calculando ruta más cercana…</div>
+    <div id="map"></div>
+  </div>
+</div>
+
+<footer class="app-footer">Uso interno Colombina S.A. — geocodificación vía OpenStreetMap/Nominatim</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const ZONA_COLORS = {
+  "ZONA NORTE-TULUA": "#A80513",
+  "ZONA SUR-ROLDANILLO": "#0E6E68",
+  "ZONA SUR-ZARZAL": "#F2A900",
+  "ZONA NORTE-ANDALUCIA-BUGALAGRANDE": "#1D3557"
+};
+const ZONA_LABELS = {
+  "ZONA NORTE-TULUA": "Tuluá",
+  "ZONA SUR-ROLDANILLO": "Roldanillo",
+  "ZONA SUR-ZARZAL": "Zarzal",
+  "ZONA NORTE-ANDALUCIA-BUGALAGRANDE": "Andalucía / Bugalagrande"
+};
+const DEFAULT_COLOR = "#8a8a8a";
+const activeZonas = new Set(Object.keys(ZONA_COLORS));
+
+const map = L.map('map', { zoomControl: false }).setView([4.22, -76.16], 11);
+
+// Basemap corporativo: cartografía clara y de alto contraste con las rutas
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; OpenStreetMap &copy; CARTO',
+  maxZoom: 19,
+  subdomains: 'abcd'
+}).addTo(map);
+
+L.control.zoom({ position: 'bottomright' }).addTo(map);
+L.control.scale({ position: 'bottomleft', imperial: false }).addTo(map);
+
+let routeLayers = {};   // id -> leaflet layer
+let searchMarker = null;
+let winnerId = null;
+
+function styleForZona(zona, opts) {
+  opts = opts || {};
+  return {
+    color: ZONA_COLORS[zona] || DEFAULT_COLOR,
+    weight: opts.weight || 3.5,
+    opacity: activeZonas.has(zona) ? (opts.opacity ?? 0.7) : 0,
+    className: opts.winner ? 'route-winner' : ''
+  };
+}
+
+fetch('api/routes')
+  .then(r => r.json())
+  .then(geojson => {
+    const layer = L.geoJSON(geojson, {
+      style: feature => styleForZona(feature.properties.zona),
+      onEachFeature: (feature, lyr) => {
+        lyr.bindTooltip(`<b>${feature.properties.ruta}</b> · ${ZONA_LABELS[feature.properties.zona] || ''}`, {sticky: true});
+        lyr.on('mouseover', () => { if (feature.properties.id !== winnerId) lyr.setStyle({ weight: 5, opacity: 0.95 }); });
+        lyr.on('mouseout', () => { if (feature.properties.id !== winnerId) lyr.setStyle(styleForZona(feature.properties.zona)); });
+        routeLayers[feature.properties.id] = lyr;
+      }
+    }).addTo(map);
+
+    renderLegend();
+  });
+
+function renderLegend() {
+  const legendEl = document.getElementById('legend');
+  let html = '<div class="legend-title">Zonas (clic para mostrar/ocultar)</div>';
+  for (const [zona, color] of Object.entries(ZONA_COLORS)) {
+    html += `<div class="legend-item" data-zona="${zona}">
+      <span class="legend-swatch" style="background:${color}"></span>${ZONA_LABELS[zona]}
+    </div>`;
+  }
+  legendEl.innerHTML = html;
+  legendEl.querySelectorAll('.legend-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const zona = item.dataset.zona;
+      if (activeZonas.has(zona)) { activeZonas.delete(zona); item.classList.add('off'); }
+      else { activeZonas.add(zona); item.classList.remove('off'); }
+      Object.values(routeLayers).forEach(lyr => {
+        if (lyr.feature.properties.id !== winnerId) lyr.setStyle(styleForZona(lyr.feature.properties.zona));
+      });
+    });
+  });
+}
+
+function setStatus(msg, isError, loading) {
+  const el = document.getElementById('status');
+  el.className = isError ? 'error' : '';
+  el.innerHTML = (loading ? '<span class="spinner"></span>' : '') + msg;
+}
+
+function setMapLoading(on) {
+  document.getElementById('mapLoading').classList.toggle('hidden', !on);
+}
+
+function resetHighlight() {
+  Object.values(routeLayers).forEach(lyr => {
+    lyr.setStyle(styleForZona(lyr.feature.properties.zona));
+  });
+  winnerId = null;
+}
+
+function highlightRoute(id, fit) {
+  resetHighlight();
+  winnerId = id;
+  const lyr = routeLayers[id];
+  if (lyr) {
+    lyr.setStyle(styleForZona(lyr.feature.properties.zona, { weight: 6, opacity: 1, winner: true }));
+    lyr.bringToFront();
+    if (fit) map.fitBounds(lyr.getBounds().pad(0.4), { maxZoom: 14 });
+  }
+}
+
+function placeSearchMarker(lat, lon, label) {
+  if (searchMarker) map.removeLayer(searchMarker);
+  const icon = L.divIcon({
+    className: '',
+    html: '<div class="search-pin-pulse"></div><div class="search-pin"></div>',
+    iconSize: [26, 26],
+    iconAnchor: [13, 26]
+  });
+  searchMarker = L.marker([lat, lon], { icon }).addTo(map)
+    .bindPopup(`<b>Punto buscado</b><br>${label || ''}`);
+}
+
+function buscarRutaCercana(lat, lon, direccionTexto) {
+  setMapLoading(true);
+  fetch(`api/buscar?lat=${lat}&lon=${lon}`)
+    .then(r => r.json())
+    .then(data => {
+      setMapLoading(false);
+      if (data.error) {
+        setStatus(data.error, true);
+        return;
+      }
+      document.getElementById('resultados').style.display = 'block';
+      document.getElementById('countLabel').textContent = `Top ${data.rutas.length}`;
+      const lista = document.getElementById('listaRutas');
+      lista.innerHTML = '';
+      const maxDist = Math.max(...data.rutas.map(r => r.distancia_m));
+      data.rutas.forEach((r, idx) => {
+        const div = document.createElement('div');
+        div.className = 'ruta-card' + (idx === 0 ? ' top' : '');
+        const km = (r.distancia_m / 1000).toFixed(2);
+        const pct = Math.max(6, 100 - (r.distancia_m / maxDist) * 100 + (idx === 0 ? 10 : 0));
+        const color = ZONA_COLORS[r.zona] || DEFAULT_COLOR;
+        div.innerHTML = `
+          <div class="ruta-card-top-row">
+            <div class="nombre"><span class="zona-dot" style="background:${color}"></span>${r.ruta}${idx===0 ? '<span class="badge">Más cercana</span>' : ''}</div>
+            <div class="dist">${km} km</div>
+          </div>
+          <span class="zona">${ZONA_LABELS[r.zona] || r.zona}</span>
+          <div class="bar-track"><div class="bar-fill" style="width:${Math.min(100, pct)}%"></div></div>
+        `;
+        div.style.cursor = 'pointer';
+        div.onclick = () => highlightRoute(r.id, true);
+        lista.appendChild(div);
+      });
+
+      placeSearchMarker(lat, lon, direccionTexto);
+      highlightRoute(data.rutas[0].id, false);
+
+      const bounds = L.latLngBounds([[lat, lon]]);
+      const winnerLyr = routeLayers[data.rutas[0].id];
+      if (winnerLyr) bounds.extend(winnerLyr.getBounds());
+      map.fitBounds(bounds.pad(0.35), { maxZoom: 14 });
+
+      setStatus(`Ruta más cercana: <b>${data.rutas[0].ruta}</b> (${(data.rutas[0].distancia_m/1000).toFixed(2)} km)`, false);
+    })
+    .catch(err => { setMapLoading(false); setStatus('Error calculando la ruta más cercana: ' + err, true); });
+}
+
+document.getElementById('btnBuscar').addEventListener('click', () => {
+  const direccion = document.getElementById('direccion').value.trim();
+  const candidatosEl = document.getElementById('candidatos');
+  candidatosEl.innerHTML = '';
+  document.getElementById('resultados').style.display = 'none';
+
+  if (!direccion) {
+    setStatus('Escribe una dirección para buscar.', true);
+    return;
+  }
+
+  setStatus('Buscando dirección...', false, true);
+  fetch(`api/geocode?direccion=${encodeURIComponent(direccion)}`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) {
+        setStatus(data.error, true);
+        return;
+      }
+      if (data.candidatos.length === 1) {
+        setStatus('Dirección encontrada. Calculando ruta más cercana...', false, true);
+        buscarRutaCercana(data.candidatos[0].lat, data.candidatos[0].lon, data.candidatos[0].display_name);
+      } else {
+        setStatus(`Se encontraron ${data.candidatos.length} coincidencias. Elige la correcta:`, false);
+        data.candidatos.forEach(c => {
+          const btn = document.createElement('button');
+          btn.className = 'candidato-btn';
+          btn.textContent = c.display_name;
+          btn.onclick = () => {
+            candidatosEl.innerHTML = '';
+            setStatus('Calculando ruta más cercana...', false, true);
+            buscarRutaCercana(c.lat, c.lon, c.display_name);
+          };
+          candidatosEl.appendChild(btn);
+        });
+      }
+    })
+    .catch(err => setStatus('Error consultando la dirección: ' + err, true));
+});
+
+document.getElementById('direccion').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('btnBuscar').click();
+});
+
+document.getElementById('btnGeo').addEventListener('click', () => {
+  if (!navigator.geolocation) {
+    setStatus('Tu navegador no soporta geolocalización.', true);
+    return;
+  }
+  setStatus('Obteniendo tu ubicación...', false, true);
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      const { latitude, longitude } = pos.coords;
+      document.getElementById('resultados').style.display = 'none';
+      document.getElementById('candidatos').innerHTML = '';
+      setStatus('Ubicación obtenida. Calculando ruta más cercana...', false, true);
+      buscarRutaCercana(latitude, longitude, 'Mi ubicación actual');
+    },
+    () => setStatus('No se pudo obtener tu ubicación. Verifica los permisos del navegador.', true)
+  );
+});
+
+/* ===================== RUTAS ADMINISTRATIVAS ===================== */
+
+let admLayerGroup = L.layerGroup();       // trazados + paradas
+let admLineLayers = {};                    // ruta_id -> polyline
+let admActiveId = null;
+
+fetch('api/routes_adm')
+  .then(r => r.json())
+  .then(geojson => {
+    const rutasMap = {}; // id -> {ruta, horario, color, paradas:[]}
+
+    geojson.features.forEach(f => {
+      const p = f.properties;
+      if (p.tipo === 'trazado') {
+        rutasMap[p.id] = { ruta: p.ruta, horario: p.horario, color: p.color, id: p.id, paradas: [] };
+        const line = L.polyline(
+          f.geometry.coordinates.map(c => [c[1], c[0]]),
+          { color: p.color, weight: 4, opacity: 0.85 }
+        );
+        line.bindTooltip(`<b>${p.ruta}</b><br>${p.horario}`, { sticky: true });
+        admLineLayers[p.id] = line;
+        admLayerGroup.addLayer(line);
+      }
+    });
+
+    geojson.features.forEach(f => {
+      const p = f.properties;
+      if (p.tipo === 'parada') {
+        rutasMap[p.ruta_id].paradas.push(p);
+        const [lon, lat] = f.geometry.coordinates;
+        const icon = L.divIcon({
+          className: '',
+          html: `<div class="stop-num-marker${p.es_final ? ' final' : ''}" style="color:${p.color};border:2px solid ${p.color};">${p.es_final ? '🏁' : p.orden}</div>`,
+          iconSize: p.es_final ? [24, 24] : [20, 20],
+          iconAnchor: p.es_final ? [12, 12] : [10, 10]
+        });
+        const marker = L.marker([lat, lon], { icon });
+        marker.bindPopup(`<b>${p.nombre}</b><br>Parada ${p.orden} · ${p.hora}<br><span style="color:${p.color};font-weight:600;">${rutasMap[p.ruta_id].ruta}</span>`);
+        admLayerGroup.addLayer(marker);
+      }
+    });
+
+    renderAdmList(Object.values(rutasMap).sort((a, b) => a.id - b.id));
+  });
+
+function renderAdmList(rutas) {
+  const el = document.getElementById('listaAdm');
+  el.innerHTML = '';
+  rutas.forEach(r => {
+    const row = document.createElement('div');
+    row.className = 'adm-route-row';
+    row.dataset.rutaId = r.id;
+    row.style.borderLeftColor = r.color;
+    let paradasHtml = '';
+    r.paradas.forEach(p => {
+      paradasHtml += `<div class="adm-parada-item"><span><span class="orden">${p.orden}.</span>${p.nombre}${p.es_final ? ' 🏁' : ''}</span><span class="hora">${p.hora}</span></div>`;
+    });
+    row.innerHTML = `
+      <div class="adm-nombre">${r.ruta}</div>
+      <div class="adm-horario">🕒 ${r.horario}</div>
+      <div class="adm-count">${r.paradas.length} paradas</div>
+      <div class="adm-paradas">${paradasHtml}</div>
+    `;
+    row.addEventListener('click', () => selectAdmRoute(r.id, row));
+    el.appendChild(row);
+  });
+}
+
+function selectAdmRoute(id, rowEl) {
+  document.querySelectorAll('.adm-route-row').forEach(r => r.classList.remove('active'));
+  if (admActiveId === id) {
+    admActiveId = null;
+    Object.values(admLineLayers).forEach(l => l.setStyle({ weight: 4, opacity: 0.85 }));
+    return;
+  }
+  admActiveId = id;
+  rowEl.classList.add('active');
+  Object.entries(admLineLayers).forEach(([lid, l]) => {
+    if (Number(lid) === id) {
+      l.setStyle({ weight: 6, opacity: 1 });
+      l.bringToFront();
+      map.fitBounds(l.getBounds().pad(0.3), { maxZoom: 15 });
+    } else {
+      l.setStyle({ weight: 3, opacity: 0.35 });
+    }
+  });
+}
+
+function setStatusAdm(msg, isError, loading) {
+  const el = document.getElementById('statusAdm');
+  el.className = isError ? 'error' : '';
+  el.innerHTML = (loading ? '<span class="spinner"></span>' : '') + msg;
+}
+
+function highlightAdmRoute(id, fit) {
+  admActiveId = id;
+  document.querySelectorAll('.adm-route-row').forEach(r => r.classList.remove('active'));
+  Object.entries(admLineLayers).forEach(([lid, l]) => {
+    if (Number(lid) === id) {
+      l.setStyle({ weight: 6, opacity: 1 });
+      l.bringToFront();
+      if (fit) map.fitBounds(l.getBounds().pad(0.35), { maxZoom: 14 });
+    } else {
+      l.setStyle({ weight: 3, opacity: 0.35 });
+    }
+  });
+  const rows = document.querySelectorAll('#listaAdm .adm-route-row');
+  const rutasOrdenadas = Object.values(admLineLayers);
+  // Vuelve a marcar como activa la fila correspondiente en el listado de abajo, si existe.
+  rows.forEach(row => {
+    if (row.dataset.rutaId === String(id)) row.classList.add('active');
+  });
+}
+
+function buscarRutaCercanaAdm(lat, lon, direccionTexto) {
+  setMapLoading(true);
+  fetch(`api/buscar_adm?lat=${lat}&lon=${lon}`)
+    .then(r => r.json())
+    .then(data => {
+      setMapLoading(false);
+      if (data.error) {
+        setStatusAdm(data.error, true);
+        return;
+      }
+      document.getElementById('resultadosAdm').style.display = 'block';
+      document.getElementById('countLabelAdm').textContent = `Top ${data.rutas.length}`;
+      const lista = document.getElementById('listaRutasAdm');
+      lista.innerHTML = '';
+      const maxDist = Math.max(...data.rutas.map(r => r.distancia_m));
+      data.rutas.forEach((r, idx) => {
+        const div = document.createElement('div');
+        div.className = 'ruta-card' + (idx === 0 ? ' top' : '');
+        const km = (r.distancia_m / 1000).toFixed(2);
+        const pct = Math.max(6, 100 - (r.distancia_m / maxDist) * 100 + (idx === 0 ? 10 : 0));
+        div.innerHTML = `
+          <div class="ruta-card-top-row">
+            <div class="nombre"><span class="zona-dot" style="background:${r.color}"></span>${r.ruta}${idx===0 ? '<span class="badge">Más cercana</span>' : ''}</div>
+            <div class="dist">${km} km</div>
+          </div>
+          <span class="zona">🕒 ${r.horario}</span>
+          <div class="bar-track"><div class="bar-fill" style="width:${Math.min(100, pct)}%"></div></div>
+        `;
+        div.style.cursor = 'pointer';
+        div.onclick = () => highlightAdmRoute(r.id, true);
+        lista.appendChild(div);
+      });
+
+      placeSearchMarker(lat, lon, direccionTexto);
+      highlightAdmRoute(data.rutas[0].id, false);
+
+      const bounds = L.latLngBounds([[lat, lon]]);
+      const winnerLyr = admLineLayers[data.rutas[0].id];
+      if (winnerLyr) bounds.extend(winnerLyr.getBounds());
+      map.fitBounds(bounds.pad(0.35), { maxZoom: 14 });
+
+      setStatusAdm(`Ruta más cercana: <b>${data.rutas[0].ruta}</b> (${(data.rutas[0].distancia_m/1000).toFixed(2)} km)`, false);
+    })
+    .catch(err => { setMapLoading(false); setStatusAdm('Error calculando la ruta más cercana: ' + err, true); });
+}
+
+document.getElementById('btnBuscarAdm').addEventListener('click', () => {
+  const direccion = document.getElementById('direccionAdm').value.trim();
+  const candidatosEl = document.getElementById('candidatosAdm');
+  candidatosEl.innerHTML = '';
+  document.getElementById('resultadosAdm').style.display = 'none';
+
+  if (!direccion) {
+    setStatusAdm('Escribe una dirección para buscar.', true);
+    return;
+  }
+
+  setStatusAdm('Buscando dirección...', false, true);
+  fetch(`api/geocode?direccion=${encodeURIComponent(direccion)}`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) {
+        setStatusAdm(data.error, true);
+        return;
+      }
+      if (data.candidatos.length === 1) {
+        setStatusAdm('Dirección encontrada. Calculando ruta más cercana...', false, true);
+        buscarRutaCercanaAdm(data.candidatos[0].lat, data.candidatos[0].lon, data.candidatos[0].display_name);
+      } else {
+        setStatusAdm(`Se encontraron ${data.candidatos.length} coincidencias. Elige la correcta:`, false);
+        data.candidatos.forEach(c => {
+          const btn = document.createElement('button');
+          btn.className = 'candidato-btn';
+          btn.textContent = c.display_name;
+          btn.onclick = () => {
+            candidatosEl.innerHTML = '';
+            setStatusAdm('Calculando ruta más cercana...', false, true);
+            buscarRutaCercanaAdm(c.lat, c.lon, c.display_name);
+          };
+          candidatosEl.appendChild(btn);
+        });
+      }
+    })
+    .catch(err => setStatusAdm('Error consultando la dirección: ' + err, true));
+});
+
+document.getElementById('direccionAdm').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('btnBuscarAdm').click();
+});
+
+document.getElementById('btnGeoAdm').addEventListener('click', () => {
+  if (!navigator.geolocation) {
+    setStatusAdm('Tu navegador no soporta geolocalización.', true);
+    return;
+  }
+  setStatusAdm('Obteniendo tu ubicación...', false, true);
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      const { latitude, longitude } = pos.coords;
+      document.getElementById('resultadosAdm').style.display = 'none';
+      document.getElementById('candidatosAdm').innerHTML = '';
+      setStatusAdm('Ubicación obtenida. Calculando ruta más cercana...', false, true);
+      buscarRutaCercanaAdm(latitude, longitude, 'Mi ubicación actual');
+    },
+    () => setStatusAdm('No se pudo obtener tu ubicación. Verifica los permisos del navegador.', true)
+  );
+});
+
+/* ===================== CONTROL DE PESTAÑAS ===================== */
+
+function activarTab(tab) {
+  const isOp = tab === 'operativas';
+  document.getElementById('tabOperativas').classList.toggle('active', isOp);
+  document.getElementById('tabAdm').classList.toggle('active', !isOp);
+  document.getElementById('panelOperativas').style.display = isOp ? 'block' : 'none';
+  document.getElementById('panelAdm').style.display = isOp ? 'none' : 'block';
+  document.getElementById('mapToolbar').textContent = isOp ? '🗺️ Rutas Colombina Operativos' : '🗺️ Rutas Administrativas';
+  document.getElementById('pageTitle').textContent = isOp ? 'Buscador de Ruta Más Cercana' : 'Rutas Administrativas Colombina';
+  document.getElementById('pageSubtitle').textContent = isOp
+    ? 'Colombina S.A. · Rutas Operativas Valle del Cauca'
+    : 'Colombina S.A. · Transporte de personal administrativo';
+
+  Object.values(routeLayers).forEach(lyr => {
+    if (isOp) map.addLayer(lyr); else map.removeLayer(lyr);
+  });
+  if (searchMarker) { if (isOp) map.addLayer(searchMarker); else map.removeLayer(searchMarker); }
+
+  if (isOp) {
+    map.removeLayer(admLayerGroup);
+    map.setView([4.22, -76.16], 11);
+  } else {
+    map.addLayer(admLayerGroup);
+    if (admLineLayers && Object.keys(admLineLayers).length) {
+      const bounds = L.latLngBounds([]);
+      Object.values(admLineLayers).forEach(l => bounds.extend(l.getBounds()));
+      map.fitBounds(bounds.pad(0.2));
+    }
+  }
+}
+
+document.getElementById('tabOperativas').addEventListener('click', () => activarTab('operativas'));
+document.getElementById('tabAdm').addEventListener('click', () => activarTab('adm'));
+</script>
+
+</body>
+</html>

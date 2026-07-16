@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Colombina te Escucha</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='te_escucha/style.css') }}">
+</head>
+<body>
+
+  <div class="bg-decor" aria-hidden="true">
+    <span class="dot dot-1"></span>
+    <span class="dot dot-2"></span>
+    <span class="dot dot-3"></span>
+    <span class="dot dot-4"></span>
+  </div>
+
+  <header class="topbar">
+    <img src="{{ url_for('static', filename='te_escucha/colombina_logo.jpg') }}" alt="Colombina" class="logo">
+  </header>
+
+  <main class="wrap">
+    <section class="hero">
+      <span class="eyebrow">Buzón del pasajero</span>
+      <h1>Colombina <span>te Escucha</span></h1>
+      <p>Este espacio es para ti, operario que usa el transporte de planta. Cuéntanos tu petición, queja, reclamo, sugerencia o felicitación sobre tu ruta. Tu voz mejora el servicio.</p>
+      <p class="privacidad">Tu nombre y CIN quedarán registrados junto con tu PQR, para poder darle seguimiento y contactarte si es necesario.</p>
+    </section>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form class="ticket" method="POST" action="{{ url_for('te_escucha.enviar') }}" id="pqr-form">
+      <div class="ticket-notch notch-top" aria-hidden="true"></div>
+
+      <div class="ticket-body">
+
+        <fieldset class="group">
+          <legend>Tus datos</legend>
+
+          <div class="field-row field-row-2">
+            <label class="field">
+              <span>Nombre completo</span>
+              <input type="text" name="nombre" id="nombre" required placeholder="Escribe tu nombre">
+            </label>
+            <label class="field">
+              <span>CIN</span>
+              <input type="text" name="cin" id="cin" required placeholder="Escribe tu CIN" inputmode="numeric">
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset class="group">
+          <legend>Tu ruta</legend>
+
+          <label class="field">
+            <span>Ruta</span>
+            <select name="ruta" id="ruta" required>
+              <option value="" disabled selected>Selecciona tu ruta</option>
+            </select>
+          </label>
+
+          <div class="field-row">
+            <label class="field">
+              <span>Municipio</span>
+              <input type="text" id="municipio" name="municipio" readonly placeholder="Se completa solo">
+            </label>
+            <label class="field">
+              <span>Conductor(a)</span>
+              <input type="text" id="conductor" name="conductor" readonly placeholder="Se completa solo">
+            </label>
+            <label class="field">
+              <span>Placa del vehículo</span>
+              <input type="text" id="placa" name="placa" readonly placeholder="Se completa solo">
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset class="group">
+          <legend>Tu mensaje</legend>
+
+          <label class="field">
+            <span>Tipo de PQR</span>
+            <div class="pqr-options" id="pqr-options">
+              {% for tipo in tipos_pqr %}
+              <button type="button" class="pqr-chip" data-value="{{ tipo }}">{{ tipo }}</button>
+              {% endfor %}
+            </div>
+            <input type="hidden" name="tipo_pqr" id="tipo_pqr" required>
+          </label>
+
+          <label class="field">
+            <span>Detalla tu PQR</span>
+            <textarea name="detalle" id="detalle" rows="5" required placeholder="Cuéntanos con el mayor detalle posible qué ocurrió..."></textarea>
+          </label>
+        </fieldset>
+
+        <button type="submit" class="submit-btn">
+          <span class="twist twist-left" aria-hidden="true"></span>
+          Enviar mi PQR
+          <span class="twist twist-right" aria-hidden="true"></span>
+        </button>
+      </div>
+
+      <div class="ticket-notch notch-bottom" aria-hidden="true"></div>
+    </form>
+
+    <footer class="foot">
+      <span>Colombina S.A. · Planta Confitería</span>
+    </footer>
+  </main>
+
+<script>
+  const RUTAS = {{ rutas_json | safe }};
+  const rutaSelect = document.getElementById('ruta');
+  const municipioInput = document.getElementById('municipio');
+  const conductorInput = document.getElementById('conductor');
+  const placaInput = document.getElementById('placa');
+  const tipoPqrInput = document.getElementById('tipo_pqr');
+  const chips = document.querySelectorAll('.pqr-chip');
+
+  RUTAS.forEach(r => {
+    const opt = document.createElement('option');
+    opt.value = r.ruta;
+    opt.textContent = `${r.ruta} — ${r.municipio}`;
+    rutaSelect.appendChild(opt);
+  });
+
+  rutaSelect.addEventListener('change', () => {
+    const seleccion = RUTAS.find(r => r.ruta === rutaSelect.value);
+    if (seleccion) {
+      municipioInput.value = seleccion.municipio;
+      conductorInput.value = seleccion.conductor;
+      placaInput.value = seleccion.placa;
+    }
+  });
+
+  chips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      chips.forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      tipoPqrInput.value = chip.dataset.value;
+    });
+  });
+
+  document.getElementById('pqr-form').addEventListener('submit', (e) => {
+    if (!tipoPqrInput.value) {
+      e.preventDefault();
+      alert('Por favor selecciona un tipo de PQR.');
+    }
+  });
+</script>
+</body>
+</html>
