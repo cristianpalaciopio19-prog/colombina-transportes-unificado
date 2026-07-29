@@ -140,6 +140,8 @@ footer {
   padding: 10px 20px;
   border-radius: 999px;
   box-shadow: 0 4px 12px rgba(11,44,107,0.08);
+  user-select: none;
+  cursor: default;
 }
 
 /* Puestos: grilla de rutas */
