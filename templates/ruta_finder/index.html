@@ -571,6 +571,7 @@
     <button class="primary" id="btnBuscar">Buscar ruta más cercana</button>
     <div id="status"></div>
     <div class="candidatos" id="candidatos"></div>
+    <button class="primary" id="btnConfirmarPin" style="display:none;background:var(--cb-gold-dark);">✓ Confirmar ubicación en el mapa</button>
 
     <div class="resultados" id="resultados" style="display:none;">
       <h3>Rutas más cercanas <span class="count" id="countLabel"></span></h3>
@@ -589,6 +590,7 @@
     <button class="primary" id="btnBuscarAdm">Buscar ruta más cercana</button>
     <div id="statusAdm"></div>
     <div class="candidatos" id="candidatosAdm"></div>
+    <button class="primary" id="btnConfirmarPinAdm" style="display:none;background:var(--cb-gold-dark);">✓ Confirmar ubicación en el mapa</button>
 
     <div class="resultados" id="resultadosAdm" style="display:none;">
       <h3>Rutas más cercanas <span class="count" id="countLabelAdm"></span></h3>
@@ -716,7 +718,8 @@ function highlightRoute(id, fit) {
   }
 }
 
-function placeSearchMarker(lat, lon, label) {
+function placeSearchMarker(lat, lon, label, opts) {
+  opts = opts || {};
   if (searchMarker) map.removeLayer(searchMarker);
   const icon = L.divIcon({
     className: '',
@@ -724,9 +727,65 @@ function placeSearchMarker(lat, lon, label) {
     iconSize: [26, 26],
     iconAnchor: [13, 26]
   });
-  searchMarker = L.marker([lat, lon], { icon }).addTo(map)
-    .bindPopup(`<b>Punto buscado</b><br>${label || ''}`);
+  searchMarker = L.marker([lat, lon], { icon, draggable: !!opts.draggable }).addTo(map)
+    .bindPopup(`<b>${opts.draggable ? 'Ajusta el pin si no está exacto' : 'Punto buscado'}</b><br>${label || ''}`);
+  if (opts.draggable) {
+    searchMarker.openPopup();
+    if (opts.onDragEnd) {
+      searchMarker.on('dragend', () => {
+        const { lat: newLat, lng: newLon } = searchMarker.getLatLng();
+        opts.onDragEnd(newLat, newLon);
+      });
+    }
+  }
 }
+
+/* ===================== CONFIRMACIÓN DE UBICACIÓN EN EL MAPA ===================== */
+// El geocodificador (Nominatim/OSM) puede ubicar direcciones rurales o mal
+// indexadas con error de varios cientos de metros. Antes de calcular la ruta
+// más cercana, se muestra el pin en el mapa (arrastrable) y se espera
+// confirmación del usuario, quien puede corregir la posición manualmente.
+let pendienteOp = null; // { lat, lon, label }
+let pendienteAdm = null;
+
+function mostrarPinConfirmacion(lat, lon, label, tipo) {
+  placeSearchMarker(lat, lon, label, {
+    draggable: true,
+    onDragEnd: (newLat, newLon) => {
+      if (tipo === 'op') { pendienteOp.lat = newLat; pendienteOp.lon = newLon; }
+      else { pendienteAdm.lat = newLat; pendienteAdm.lon = newLon; }
+    }
+  });
+  map.setView([lat, lon], 16);
+
+  if (tipo === 'op') {
+    pendienteOp = { lat, lon, label };
+    document.getElementById('resultados').style.display = 'none';
+    document.getElementById('btnConfirmarPin').style.display = 'block';
+    setStatus('Verifica el pin en el mapa: arrástralo a la ubicación exacta y confirma.', false);
+  } else {
+    pendienteAdm = { lat, lon, label };
+    document.getElementById('resultadosAdm').style.display = 'none';
+    document.getElementById('btnConfirmarPinAdm').style.display = 'block';
+    setStatusAdm('Verifica el pin en el mapa: arrástralo a la ubicación exacta y confirma.', false);
+  }
+}
+
+document.getElementById('btnConfirmarPin').addEventListener('click', () => {
+  if (!pendienteOp) return;
+  document.getElementById('btnConfirmarPin').style.display = 'none';
+  document.getElementById('candidatos').innerHTML = '';
+  setStatus('Calculando ruta más cercana...', false, true);
+  buscarRutaCercana(pendienteOp.lat, pendienteOp.lon, pendienteOp.label);
+});
+
+document.getElementById('btnConfirmarPinAdm').addEventListener('click', () => {
+  if (!pendienteAdm) return;
+  document.getElementById('btnConfirmarPinAdm').style.display = 'none';
+  document.getElementById('candidatosAdm').innerHTML = '';
+  setStatusAdm('Calculando ruta más cercana...', false, true);
+  buscarRutaCercanaAdm(pendienteAdm.lat, pendienteAdm.lon, pendienteAdm.label);
+});
 
 function buscarRutaCercana(lat, lon, direccionTexto) {
   setMapLoading(true);
@@ -780,6 +839,8 @@ document.getElementById('btnBuscar').addEventListener('click', () => {
   const candidatosEl = document.getElementById('candidatos');
   candidatosEl.innerHTML = '';
   document.getElementById('resultados').style.display = 'none';
+  document.getElementById('btnConfirmarPin').style.display = 'none';
+  pendienteOp = null;
 
   if (!direccion) {
     setStatus('Escribe una dirección para buscar.', true);
@@ -795,8 +856,7 @@ document.getElementById('btnBuscar').addEventListener('click', () => {
         return;
       }
       if (data.candidatos.length === 1) {
-        setStatus('Dirección encontrada. Calculando ruta más cercana...', false, true);
-        buscarRutaCercana(data.candidatos[0].lat, data.candidatos[0].lon, data.candidatos[0].display_name);
+        mostrarPinConfirmacion(data.candidatos[0].lat, data.candidatos[0].lon, data.candidatos[0].display_name, 'op');
       } else {
         setStatus(`Se encontraron ${data.candidatos.length} coincidencias. Elige la correcta:`, false);
         data.candidatos.forEach(c => {
@@ -805,8 +865,7 @@ document.getElementById('btnBuscar').addEventListener('click', () => {
           btn.textContent = c.display_name;
           btn.onclick = () => {
             candidatosEl.innerHTML = '';
-            setStatus('Calculando ruta más cercana...', false, true);
-            buscarRutaCercana(c.lat, c.lon, c.display_name);
+            mostrarPinConfirmacion(c.lat, c.lon, c.display_name, 'op');
           };
           candidatosEl.appendChild(btn);
         });
@@ -830,6 +889,8 @@ document.getElementById('btnGeo').addEventListener('click', () => {
       const { latitude, longitude } = pos.coords;
       document.getElementById('resultados').style.display = 'none';
       document.getElementById('candidatos').innerHTML = '';
+      document.getElementById('btnConfirmarPin').style.display = 'none';
+      pendienteOp = null;
       setStatus('Ubicación obtenida. Calculando ruta más cercana...', false, true);
       buscarRutaCercana(latitude, longitude, 'Mi ubicación actual');
     },
@@ -1002,6 +1063,8 @@ document.getElementById('btnBuscarAdm').addEventListener('click', () => {
   const candidatosEl = document.getElementById('candidatosAdm');
   candidatosEl.innerHTML = '';
   document.getElementById('resultadosAdm').style.display = 'none';
+  document.getElementById('btnConfirmarPinAdm').style.display = 'none';
+  pendienteAdm = null;
 
   if (!direccion) {
     setStatusAdm('Escribe una dirección para buscar.', true);
@@ -1017,8 +1080,7 @@ document.getElementById('btnBuscarAdm').addEventListener('click', () => {
         return;
       }
       if (data.candidatos.length === 1) {
-        setStatusAdm('Dirección encontrada. Calculando ruta más cercana...', false, true);
-        buscarRutaCercanaAdm(data.candidatos[0].lat, data.candidatos[0].lon, data.candidatos[0].display_name);
+        mostrarPinConfirmacion(data.candidatos[0].lat, data.candidatos[0].lon, data.candidatos[0].display_name, 'adm');
       } else {
         setStatusAdm(`Se encontraron ${data.candidatos.length} coincidencias. Elige la correcta:`, false);
         data.candidatos.forEach(c => {
@@ -1027,8 +1089,7 @@ document.getElementById('btnBuscarAdm').addEventListener('click', () => {
           btn.textContent = c.display_name;
           btn.onclick = () => {
             candidatosEl.innerHTML = '';
-            setStatusAdm('Calculando ruta más cercana...', false, true);
-            buscarRutaCercanaAdm(c.lat, c.lon, c.display_name);
+            mostrarPinConfirmacion(c.lat, c.lon, c.display_name, 'adm');
           };
           candidatosEl.appendChild(btn);
         });
@@ -1052,6 +1113,8 @@ document.getElementById('btnGeoAdm').addEventListener('click', () => {
       const { latitude, longitude } = pos.coords;
       document.getElementById('resultadosAdm').style.display = 'none';
       document.getElementById('candidatosAdm').innerHTML = '';
+      document.getElementById('btnConfirmarPinAdm').style.display = 'none';
+      pendienteAdm = null;
       setStatusAdm('Ubicación obtenida. Calculando ruta más cercana...', false, true);
       buscarRutaCercanaAdm(latitude, longitude, 'Mi ubicación actual');
     },
