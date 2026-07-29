@@ -137,18 +137,29 @@ def api_routes_adm():
     return jsonify(ROUTES_ADM_GEOJSON)
 
 
+ZONA_HINTS = ["tulua", "tuluá", "zarzal", "roldanillo", "andalucia", "andalucía", "bugalagrande", "valle del cauca"]
+
+
 @ruta_finder_bp.route("/api/geocode")
 def api_geocode():
     direccion = request.args.get("direccion", "").strip()
     if not direccion:
         return jsonify({"error": "Debe indicar una dirección"}), 400
 
+    # Si el usuario no menciona ninguna zona operativa, se asume la región y se
+    # agrega "Valle del Cauca, Colombia" a la consulta para reducir ambigüedad.
+    direccion_normalizada = direccion.lower()
+    if not any(hint in direccion_normalizada for hint in ZONA_HINTS):
+        direccion_query = f"{direccion}, Valle del Cauca, Colombia"
+    else:
+        direccion_query = direccion
+
     params = {
-        "q": direccion,
+        "q": direccion_query,
         "format": "json",
         "countrycodes": "co",
         "viewbox": VIEWBOX,
-        "bounded": 0,
+        "bounded": 1,  # restringe estrictamente a la zona operativa, no solo sugiere
         "limit": 5,
     }
     headers = {"User-Agent": "ColombinaRutaFinder/1.0 (uso interno)"}
@@ -159,6 +170,17 @@ def api_geocode():
         data = resp.json()
     except requests.RequestException as e:
         return jsonify({"error": f"Error consultando el geocodificador: {e}"}), 502
+
+    if not data:
+        # Reintento sin la restricción estricta, por si la dirección es válida
+        # pero cae justo en el borde de la zona operativa.
+        params["bounded"] = 0
+        try:
+            resp = requests.get(NOMINATIM_URL, params=params, headers=headers, timeout=10)
+            resp.raise_for_status()
+            data = resp.json()
+        except requests.RequestException as e:
+            return jsonify({"error": f"Error consultando el geocodificador: {e}"}), 502
 
     if not data:
         return jsonify({"error": "No se encontró la dirección. Intenta ser más específico (incluye ciudad)."}), 404
