@@ -1,6 +1,13 @@
 {% extends "estado_bus/base.html" %}
 {% block title %}Inicio{% endblock %}
 {% block content %}
+  <div class="carretera-wrap">
+    <div class="carretera-etiqueta" id="carretera-etiqueta">Ruta {{ rutas_azar[0].ruta }}</div>
+    <div class="carretera">
+      <div class="carro" id="carro">🚌</div>
+    </div>
+  </div>
+
   <p class="subtitle">Rutas activas del sistema de transporte</p>
   <div class="chip-grid">
     {% for r in rutas_azar %}
@@ -17,6 +24,17 @@
   </div>
 
   <script>
+    const rutasChip = {{ rutas_azar | map(attribute='ruta') | list | tojson }};
+    const etiqueta = document.getElementById('carretera-etiqueta');
+    const carro = document.getElementById('carro');
+    let idxRuta = 0;
+
+    // Cada vez que el bus completa un recorrido, cambia la ruta mostrada arriba.
+    carro.addEventListener('animationiteration', function () {
+      idxRuta = (idxRuta + 1) % rutasChip.length;
+      etiqueta.textContent = `Ruta ${rutasChip[idxRuta]}`;
+    });
+
     const lista = document.getElementById('en-vivo-lista');
     const vacio = document.getElementById('en-vivo-vacio');
 
