@@ -13,7 +13,7 @@
 {% endblock %}
 {% block content %}
   <p class="subtitle">Turno {{ turno }} &middot; {{ ruta.municipio }}</p>
-  <p class="hint" style="margin-top:-8px;">Haz clic en un puesto para cambiar su estado</p>
+  <p class="hint" style="margin-top:-8px;">Toca un puesto para asignarlo o liberarlo</p>
 
   <div class="en-vivo" id="en-vivo" style="display:none;">
     <span class="en-vivo-dot"></span>
@@ -34,9 +34,12 @@
             {% if numero is none %}
               <div class="pasillo"></div>
             {% else %}
+              {% set info = asientos.get(numero, {}) %}
               <button type="button"
-                      class="asiento admin {{ 'ocupado' if asientos.get(numero) == 'ocupado' else 'libre' }}"
-                      data-numero="{{ numero }}">
+                      class="asiento admin {{ 'ocupado' if info.get('estado') == 'ocupado' else 'libre' }}"
+                      data-numero="{{ numero }}"
+                      data-asignado="{{ info.get('asignado_por') or '' }}"
+                      title="{{ 'Ocupado por ' + info.get('asignado_por') if info.get('estado') == 'ocupado' and info.get('asignado_por') else 'Libre' }}">
                 <span class="numero">{{ numero }}</span>
               </button>
             {% endif %}
@@ -46,13 +49,14 @@
     </div>
   </div>
 
-  <p class="hint">Los cambios se guardan de inmediato para este turno y ruta.</p>
+  <p class="hint" id="detalle-asiento">Pasa el mouse o toca un puesto para ver quién lo tiene asignado.</p>
 
   <script>
     const grid = document.getElementById('bus-grid');
     const clave = grid.dataset.clave;
     const ruta = grid.dataset.ruta;
     const turno = grid.dataset.turno;
+    const detalle = document.getElementById('detalle-asiento');
 
     let nombreAdmin = localStorage.getItem('estado_bus_nombre_admin') || '';
     if (!nombreAdmin) {
@@ -63,6 +67,15 @@
     grid.querySelectorAll('.asiento.admin').forEach(function (btn) {
       btn.addEventListener('click', function () {
         const numero = btn.dataset.numero;
+        const estabaOcupado = btn.classList.contains('ocupado');
+        const asignadoAntes = btn.dataset.asignado;
+
+        // Si ya estaba ocupado por otra persona, confirma antes de liberarlo.
+        if (estabaOcupado && asignadoAntes && asignadoAntes !== nombreAdmin) {
+          const seguro = window.confirm(`Este puesto lo asignó ${asignadoAntes}. ¿Quieres liberarlo de todos modos?`);
+          if (!seguro) return;
+        }
+
         const body = new URLSearchParams({ clave: clave, nombre: nombreAdmin });
         fetch(`/estado-bus/puestos/${encodeURIComponent(ruta)}/${turno}/admin/toggle/${numero}`, {
           method: 'POST',
@@ -77,6 +90,11 @@
             if (!data || !data.estado) return;
             btn.classList.remove('libre', 'ocupado');
             btn.classList.add(data.estado);
+            btn.dataset.asignado = data.asignado_por || '';
+            btn.title = data.estado === 'ocupado' ? `Ocupado por ${data.asignado_por}` : 'Libre';
+            detalle.textContent = data.estado === 'ocupado'
+              ? `Puesto ${numero}: ahora ocupado por ${data.asignado_por}`
+              : `Puesto ${numero}: liberado`;
           });
       });
     });
@@ -86,6 +104,15 @@
     const texto = document.getElementById('en-vivo-texto');
     let ultimoIdMostrado = null;
 
+    function actualizarAsientoDesdeFeed(numero, estado, nombre) {
+      const btn = grid.querySelector(`.asiento[data-numero="${numero}"]`);
+      if (!btn) return;
+      btn.classList.remove('libre', 'ocupado');
+      btn.classList.add(estado);
+      btn.dataset.asignado = estado === 'ocupado' ? (nombre || '') : '';
+      btn.title = estado === 'ocupado' ? `Ocupado por ${nombre}` : 'Libre';
+    }
+
     function consultarActividad() {
       fetch(`/estado-bus/puestos/${encodeURIComponent(ruta)}/${turno}/actividad`)
         .then(function (res) { return res.json(); })
@@ -93,10 +120,11 @@
           const eventos = (data && data.eventos) || [];
           if (eventos.length === 0) { banner.style.display = 'none'; return; }
           const e = eventos[0];
+          actualizarAsientoDesdeFeed(e.numero, e.estado, e.nombre);
           const clave = `${e.ts}-${e.numero}`;
           if (clave === ultimoIdMostrado) return;
           ultimoIdMostrado = clave;
-          const accion = e.estado === 'ocupado' ? 'está asignando' : 'liberó';
+          const accion = e.estado === 'ocupado' ? 'se asignó' : 'liberó';
           texto.textContent = `${e.nombre} ${accion} el puesto ${e.numero} (Turno ${e.turno})`;
           banner.style.display = 'flex';
         })

@@ -49,6 +49,11 @@ def init_db():
         )
         """
     )
+    columnas = {row[1] for row in db.execute("PRAGMA table_info(asientos)")}
+    if "asignado_por" not in columnas:
+        db.execute("ALTER TABLE asientos ADD COLUMN asignado_por TEXT")
+    if "asignado_ts" not in columnas:
+        db.execute("ALTER TABLE asientos ADD COLUMN asignado_ts REAL")
     db.execute(
         """
         CREATE TABLE IF NOT EXISTS actividad (
@@ -96,10 +101,18 @@ def validar_turno_o_404(turno):
 def obtener_asientos(codigo_ruta, turno):
     db = get_db()
     filas = db.execute(
-        "SELECT numero, estado FROM asientos WHERE ruta = ? AND turno = ? ORDER BY numero",
+        "SELECT numero, estado, asignado_por, asignado_ts FROM asientos "
+        "WHERE ruta = ? AND turno = ? ORDER BY numero",
         (codigo_ruta, turno),
     ).fetchall()
-    return {row["numero"]: row["estado"] for row in filas}
+    return {
+        row["numero"]: {
+            "estado": row["estado"],
+            "asignado_por": row["asignado_por"],
+            "asignado_ts": row["asignado_ts"],
+        }
+        for row in filas
+    }
 
 
 def registrar_actividad(codigo_ruta, turno, numero, nombre, estado):
@@ -232,15 +245,27 @@ def puestos_admin_toggle(codigo_ruta, turno, numero):
     ).fetchone()
     if fila is not None:
         nuevo_estado = "libre" if fila["estado"] == "ocupado" else "ocupado"
-        db.execute(
-            "UPDATE asientos SET estado = ? WHERE ruta = ? AND turno = ? AND numero = ?",
-            (nuevo_estado, codigo_ruta, turno, numero),
-        )
+        if nuevo_estado == "ocupado":
+            db.execute(
+                "UPDATE asientos SET estado = ?, asignado_por = ?, asignado_ts = ? "
+                "WHERE ruta = ? AND turno = ? AND numero = ?",
+                (nuevo_estado, nombre, time.time(), codigo_ruta, turno, numero),
+            )
+        else:
+            db.execute(
+                "UPDATE asientos SET estado = ?, asignado_por = NULL, asignado_ts = NULL "
+                "WHERE ruta = ? AND turno = ? AND numero = ?",
+                (nuevo_estado, codigo_ruta, turno, numero),
+            )
         db.commit()
         registrar_actividad(codigo_ruta, turno, numero, nombre, nuevo_estado)
 
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-        return jsonify(numero=numero, estado=nuevo_estado if fila else None)
+        return jsonify(
+            numero=numero,
+            estado=nuevo_estado if fila else None,
+            asignado_por=nombre if fila and nuevo_estado == "ocupado" else None,
+        )
     return redirect(
         url_for(
             "estado_bus.puestos_admin", codigo_ruta=codigo_ruta, turno=turno, clave=clave

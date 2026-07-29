@@ -32,8 +32,11 @@
             {% if numero is none %}
               <div class="pasillo"></div>
             {% else %}
+              {% set info = asientos.get(numero, {}) %}
               <div id="asiento-{{ numero }}" data-numero="{{ numero }}"
-                   class="asiento {{ 'ocupado' if asientos.get(numero) == 'ocupado' else 'libre' }}">
+                   data-asignado="{{ info.get('asignado_por') or '' }}"
+                   class="asiento {{ 'ocupado' if info.get('estado') == 'ocupado' else 'libre' }}"
+                   title="{{ 'Ocupado por ' + info.get('asignado_por') if info.get('estado') == 'ocupado' and info.get('asignado_por') else 'Libre' }}">
                 <span class="numero">{{ numero }}</span>
               </div>
             {% endif %}
@@ -43,6 +46,8 @@
     </div>
   </div>
 
+  <p class="hint" id="detalle-asiento">Toca un puesto para ver quién lo tiene asignado.</p>
+
   <a class="admin-link primary" href="{{ url_for('estado_bus.puestos_admin', codigo_ruta=ruta.ruta, turno=turno) }}">Administrar puestos &rarr;</a>
 
   <script>
@@ -50,13 +55,27 @@
     const turnoNum = "{{ turno }}";
     const banner = document.getElementById('en-vivo');
     const texto = document.getElementById('en-vivo-texto');
+    const detalle = document.getElementById('detalle-asiento');
     let ultimoIdMostrado = null;
 
-    function actualizarAsiento(numero, estado) {
+    document.querySelectorAll('.asiento[data-numero]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        const numero = el.dataset.numero;
+        const asignado = el.dataset.asignado;
+        const ocupado = el.classList.contains('ocupado');
+        detalle.textContent = ocupado
+          ? (asignado ? `Puesto ${numero}: ocupado por ${asignado}` : `Puesto ${numero}: ocupado`)
+          : `Puesto ${numero}: libre`;
+      });
+    });
+
+    function actualizarAsiento(numero, estado, asignadoPor) {
       const el = document.getElementById(`asiento-${numero}`);
       if (!el) return;
       el.classList.remove('libre', 'ocupado');
       el.classList.add(estado);
+      el.dataset.asignado = asignadoPor || '';
+      el.title = (estado === 'ocupado' && asignadoPor) ? `Ocupado por ${asignadoPor}` : (estado === 'ocupado' ? 'Ocupado' : 'Libre');
     }
 
     function consultarActividad() {
@@ -66,11 +85,11 @@
           const eventos = (data && data.eventos) || [];
           if (eventos.length === 0) { banner.style.display = 'none'; return; }
           const e = eventos[0];
-          actualizarAsiento(e.numero, e.estado);
+          actualizarAsiento(e.numero, e.estado, e.estado === 'ocupado' ? e.nombre : null);
           const clave = `${e.ts}-${e.numero}`;
           if (clave === ultimoIdMostrado) return;
           ultimoIdMostrado = clave;
-          const accion = e.estado === 'ocupado' ? 'está asignando' : 'liberó';
+          const accion = e.estado === 'ocupado' ? 'se asignó' : 'liberó';
           texto.textContent = `${e.nombre} ${accion} el puesto ${e.numero}`;
           banner.style.display = 'flex';
         })
