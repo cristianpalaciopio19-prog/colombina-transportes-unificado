@@ -8,4 +8,46 @@
     {% endfor %}
   </div>
   <p class="hint">Selección aleatoria en cada carga. Consulta <strong>Rutas</strong> para el listado completo con conductor y placa, o <strong>Puestos</strong> para la disponibilidad de cada bus.</p>
+
+  <div class="en-vivo-panel">
+    <div class="en-vivo-panel-header"><span class="en-vivo-dot"></span> En vivo</div>
+    <div id="en-vivo-lista" class="en-vivo-lista">
+      <p class="hint" id="en-vivo-vacio">Sin actividad reciente.</p>
+    </div>
+  </div>
+
+  <script>
+    const lista = document.getElementById('en-vivo-lista');
+    const vacio = document.getElementById('en-vivo-vacio');
+
+    function tiempoRelativo(ts) {
+      const seg = Math.max(0, Math.round(Date.now() / 1000 - ts));
+      if (seg < 5) return 'ahora mismo';
+      return `hace ${seg}s`;
+    }
+
+    function consultarActividadGlobal() {
+      fetch('/estado-bus/actividad')
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          const eventos = (data && data.eventos) || [];
+          if (eventos.length === 0) {
+            lista.innerHTML = '';
+            lista.appendChild(vacio);
+            return;
+          }
+          lista.innerHTML = '';
+          eventos.forEach(function (e) {
+            const accion = e.estado === 'ocupado' ? 'está asignando' : 'liberó';
+            const div = document.createElement('div');
+            div.className = 'en-vivo-item';
+            div.innerHTML = `<strong>${e.nombre}</strong> ${accion} el puesto ${e.numero} en la ${e.ruta} (Turno ${e.turno}) <span class="en-vivo-hace">${tiempoRelativo(e.ts)}</span>`;
+            lista.appendChild(div);
+          });
+        })
+        .catch(function () {});
+    }
+    consultarActividadGlobal();
+    setInterval(consultarActividadGlobal, 3000);
+  </script>
 {% endblock %}

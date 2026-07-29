@@ -1,6 +1,7 @@
 import os
 import random
 import sqlite3
+import time
 
 from flask import Blueprint, abort, g, jsonify, redirect, render_template, request, url_for
 
@@ -48,6 +49,19 @@ def init_db():
         )
         """
     )
+    db.execute(
+        """
+        CREATE TABLE IF NOT EXISTS actividad (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ruta TEXT NOT NULL,
+            turno INTEGER NOT NULL,
+            numero INTEGER NOT NULL,
+            nombre TEXT NOT NULL,
+            estado TEXT NOT NULL,
+            ts REAL NOT NULL
+        )
+        """
+    )
     for ruta in RUTAS_POR_CODIGO:
         for turno in TURNOS:
             existentes = {
@@ -86,6 +100,38 @@ def obtener_asientos(codigo_ruta, turno):
         (codigo_ruta, turno),
     ).fetchall()
     return {row["numero"]: row["estado"] for row in filas}
+
+
+def registrar_actividad(codigo_ruta, turno, numero, nombre, estado):
+    db = get_db()
+    db.execute(
+        "INSERT INTO actividad (ruta, turno, numero, nombre, estado, ts) VALUES (?, ?, ?, ?, ?, ?)",
+        (codigo_ruta, turno, numero, nombre.strip()[:40], estado, time.time()),
+    )
+    # Se conservan solo los últimos 200 eventos para no crecer indefinidamente.
+    db.execute(
+        "DELETE FROM actividad WHERE id NOT IN "
+        "(SELECT id FROM actividad ORDER BY id DESC LIMIT 200)"
+    )
+    db.commit()
+
+
+def obtener_actividad_reciente(segundos=8, codigo_ruta=None, turno=None):
+    db = get_db()
+    desde = time.time() - segundos
+    if codigo_ruta and turno:
+        filas = db.execute(
+            "SELECT ruta, turno, numero, nombre, estado, ts FROM actividad "
+            "WHERE ts >= ? AND ruta = ? AND turno = ? ORDER BY ts DESC LIMIT 10",
+            (desde, codigo_ruta, turno),
+        ).fetchall()
+    else:
+        filas = db.execute(
+            "SELECT ruta, turno, numero, nombre, estado, ts FROM actividad "
+            "WHERE ts >= ? ORDER BY ts DESC LIMIT 10",
+            (desde,),
+        ).fetchall()
+    return [dict(f) for f in filas]
 
 
 def distribucion_bus(total):
@@ -173,6 +219,7 @@ def puestos_admin_toggle(codigo_ruta, turno, numero):
     obtener_ruta_o_404(codigo_ruta)
     validar_turno_o_404(turno)
     clave = request.form.get("clave", "")
+    nombre = request.form.get("nombre", "").strip() or "Alguien"
     if clave != ADMIN_PASSWORD:
         return redirect(
             url_for("estado_bus.puestos_admin", codigo_ruta=codigo_ruta, turno=turno)
@@ -190,6 +237,7 @@ def puestos_admin_toggle(codigo_ruta, turno, numero):
             (nuevo_estado, codigo_ruta, turno, numero),
         )
         db.commit()
+        registrar_actividad(codigo_ruta, turno, numero, nombre, nuevo_estado)
 
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
         return jsonify(numero=numero, estado=nuevo_estado if fila else None)
@@ -198,6 +246,18 @@ def puestos_admin_toggle(codigo_ruta, turno, numero):
             "estado_bus.puestos_admin", codigo_ruta=codigo_ruta, turno=turno, clave=clave
         )
     )
+
+
+@estado_bus_bp.route("/puestos/<codigo_ruta>/<int:turno>/actividad")
+def puestos_actividad(codigo_ruta, turno):
+    obtener_ruta_o_404(codigo_ruta)
+    validar_turno_o_404(turno)
+    return jsonify(eventos=obtener_actividad_reciente(codigo_ruta=codigo_ruta, turno=turno))
+
+
+@estado_bus_bp.route("/actividad")
+def actividad_global():
+    return jsonify(eventos=obtener_actividad_reciente())
 
 
 # --- Rutas -------------------------------------------------------------

@@ -15,6 +15,11 @@
   <p class="subtitle">Turno {{ turno }} &middot; {{ ruta.municipio }}</p>
   <p class="hint" style="margin-top:-8px;">Haz clic en un puesto para cambiar su estado</p>
 
+  <div class="en-vivo" id="en-vivo" style="display:none;">
+    <span class="en-vivo-dot"></span>
+    <span id="en-vivo-texto"></span>
+  </div>
+
   <div class="legend">
     <span><i class="dot verde"></i> Libre</span>
     <span><i class="dot rojo"></i> Ocupado</span>
@@ -48,10 +53,17 @@
     const clave = grid.dataset.clave;
     const ruta = grid.dataset.ruta;
     const turno = grid.dataset.turno;
+
+    let nombreAdmin = localStorage.getItem('estado_bus_nombre_admin') || '';
+    if (!nombreAdmin) {
+      nombreAdmin = window.prompt('¿Cuál es tu nombre? (se mostrará cuando asignes un puesto)', '') || 'Alguien';
+      localStorage.setItem('estado_bus_nombre_admin', nombreAdmin);
+    }
+
     grid.querySelectorAll('.asiento.admin').forEach(function (btn) {
       btn.addEventListener('click', function () {
         const numero = btn.dataset.numero;
-        const body = new URLSearchParams({ clave: clave });
+        const body = new URLSearchParams({ clave: clave, nombre: nombreAdmin });
         fetch(`/estado-bus/puestos/${encodeURIComponent(ruta)}/${turno}/admin/toggle/${numero}`, {
           method: 'POST',
           headers: {
@@ -68,5 +80,29 @@
           });
       });
     });
+
+    // --- Recuadro "En vivo" ---
+    const banner = document.getElementById('en-vivo');
+    const texto = document.getElementById('en-vivo-texto');
+    let ultimoIdMostrado = null;
+
+    function consultarActividad() {
+      fetch(`/estado-bus/puestos/${encodeURIComponent(ruta)}/${turno}/actividad`)
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          const eventos = (data && data.eventos) || [];
+          if (eventos.length === 0) { banner.style.display = 'none'; return; }
+          const e = eventos[0];
+          const clave = `${e.ts}-${e.numero}`;
+          if (clave === ultimoIdMostrado) return;
+          ultimoIdMostrado = clave;
+          const accion = e.estado === 'ocupado' ? 'está asignando' : 'liberó';
+          texto.textContent = `${e.nombre} ${accion} el puesto ${e.numero} (Turno ${e.turno})`;
+          banner.style.display = 'flex';
+        })
+        .catch(function () {});
+    }
+    consultarActividad();
+    setInterval(consultarActividad, 3000);
   </script>
 {% endblock %}
