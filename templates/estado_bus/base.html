@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Estado del Bus{% endblock %} | Colombina Transportes</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='estado_bus/style.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="{{ url_for('home') }}">&larr; Portal</a>
+    <h1>Estado del Bus</h1>
+  </header>
+
+  <nav class="tabs">
+    <a href="{{ url_for('estado_bus.inicio') }}" class="{{ 'active' if active=='inicio' else '' }}">Inicio</a>
+    <a href="{{ url_for('estado_bus.puestos') }}" class="{{ 'active' if active=='puestos' else '' }}">Puestos</a>
+    <a href="{{ url_for('estado_bus.rutas') }}" class="{{ 'active' if active=='rutas' else '' }}">Rutas</a>
+  </nav>
+
+  <main class="content">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer>Colombina S.A. &middot; Planta Confitería PL1</footer>
+</body>
+</html>

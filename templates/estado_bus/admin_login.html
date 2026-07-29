@@ -1,0 +1,10 @@
+{% extends "estado_bus/base.html" %}
+{% block title %}Admin Puestos{% endblock %}
+{% block content %}
+  {% if ruta %}<p class="subtitle">Turno {{ turno }} &ndash; RUTA {{ ruta.ruta }} &ndash; {{ ruta.municipio | upper }}</p>{% endif %}
+  <form class="login-form" method="get" action="{{ url_for('estado_bus.puestos_admin', codigo_ruta=ruta.ruta, turno=turno) if ruta else '#' }}">
+    <label for="clave">Clave de administrador</label>
+    <input type="password" id="clave" name="clave" required>
+    <button type="submit">Ingresar</button>
+  </form>
+{% endblock %}

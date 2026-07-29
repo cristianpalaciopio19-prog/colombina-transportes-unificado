@@ -1,0 +1,30 @@
+{% extends "estado_bus/base.html" %}
+{% block title %}Rutas{% endblock %}
+{% block content %}
+  <p class="subtitle">Conductor, placa y paradas de cada ruta</p>
+
+  <div class="rutas-list">
+    {% for r in rutas %}
+      <details class="ruta-card">
+        <summary>
+          <span class="ruta-codigo">{{ r.ruta }}</span>
+          <span class="ruta-municipio">{{ r.municipio }}</span>
+        </summary>
+        <div class="ruta-detalle">
+          <p><strong>Conductor:</strong> {{ r.conductor }}</p>
+          <p><strong>Placa:</strong> {{ r.placa }}</p>
+          <p><strong>Paradas:</strong></p>
+          {% if r.paradas %}
+            <ol class="paradas">
+              {% for parada in r.paradas %}
+                <li>{{ parada }}</li>
+              {% endfor %}
+            </ol>
+          {% else %}
+            <p class="hint">Sin paradas registradas todavía.</p>
+          {% endif %}
+        </div>
+      </details>
+    {% endfor %}
+  </div>
+{% endblock %}

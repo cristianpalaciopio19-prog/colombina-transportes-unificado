@@ -1,0 +1,34 @@
+{% extends "estado_bus/base.html" %}
+{% block title %}Puestos {{ ruta.ruta }} T{{ turno }}{% endblock %}
+{% block content %}
+  <p class="subtitle">Turno {{ turno }} &ndash; RUTA {{ ruta.ruta }} &ndash; {{ ruta.municipio | upper }}</p>
+  <p class="hint" style="margin-top:-8px;">{{ ruta.conductor }} &middot; {{ ruta.placa }}</p>
+
+  <div class="legend">
+    <span><i class="dot verde"></i> Libre</span>
+    <span><i class="dot rojo"></i> Ocupado</span>
+  </div>
+
+  <div class="bus-frame">
+    <div class="bus-front">Frente</div>
+    <div class="bus-grid">
+      {% for fila in filas %}
+        <div class="fila">
+          {% for numero in fila %}
+            {% if numero is none %}
+              <div class="pasillo"></div>
+            {% else %}
+              <div class="asiento {{ 'ocupado' if asientos.get(numero) == 'ocupado' else 'libre' }}">
+                <span class="numero">{{ numero }}</span>
+              </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <p class="hint">Este mapa es propio del Turno {{ turno }} de la ruta {{ ruta.ruta }}. Los otros turnos tienen su propio mapa independiente.</p>
+  <a class="admin-link" href="{{ url_for('estado_bus.puestos_admin', codigo_ruta=ruta.ruta, turno=turno) }}">Panel de administración &rarr;</a>
+  <a class="admin-link" href="{{ url_for('estado_bus.puestos') }}">&larr; Ver otra ruta / turno</a>
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends "estado_bus/base.html" %}
+{% block title %}Admin Puestos {{ ruta.ruta }} T{{ turno }}{% endblock %}
+{% block content %}
+  <p class="subtitle">Turno {{ turno }} &ndash; RUTA {{ ruta.ruta }} &ndash; {{ ruta.municipio | upper }}</p>
+  <p class="hint" style="margin-top:-8px;">Haz clic en un puesto para cambiar su estado (libre / ocupado)</p>
+
+  <div class="legend">
+    <span><i class="dot verde"></i> Libre</span>
+    <span><i class="dot rojo"></i> Ocupado</span>
+  </div>
+
+  <div class="bus-frame">
+    <div class="bus-front">Frente</div>
+    <div class="bus-grid" id="bus-grid" data-clave="{{ clave }}" data-ruta="{{ ruta.ruta }}" data-turno="{{ turno }}">
+      {% for fila in filas %}
+        <div class="fila">
+          {% for numero in fila %}
+            {% if numero is none %}
+              <div class="pasillo"></div>
+            {% else %}
+              <button type="button"
+                      class="asiento admin {{ 'ocupado' if asientos.get(numero) == 'ocupado' else 'libre' }}"
+                      data-numero="{{ numero }}">
+                <span class="numero">{{ numero }}</span>
+              </button>
+            {% endif %}
+          {% endfor %}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <p class="hint">Los cambios se guardan de inmediato para este turno y ruta, y se reflejan en su vista pública de Puestos.</p>
+
+  <script>
+    const grid = document.getElementById('bus-grid');
+    const clave = grid.dataset.clave;
+    const ruta = grid.dataset.ruta;
+    const turno = grid.dataset.turno;
+    grid.querySelectorAll('.asiento.admin').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const numero = btn.dataset.numero;
+        const body = new URLSearchParams({ clave: clave });
+        fetch(`/estado-bus/puestos/${encodeURIComponent(ruta)}/${turno}/admin/toggle/${numero}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+          body: body,
+        })
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            if (!data || !data.estado) return;
+            btn.classList.remove('libre', 'ocupado');
+            btn.classList.add(data.estado);
+          });
+      });
+    });
+  </script>
+{% endblock %}
