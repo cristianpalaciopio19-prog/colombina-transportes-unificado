@@ -1,8 +1,19 @@
 {% extends "estado_bus/base.html" %}
 {% block title %}Admin Puestos {{ ruta.ruta }} T{{ turno }}{% endblock %}
+{% block breadcrumb %}
+  <div class="breadcrumb">
+    <a href="{{ url_for('estado_bus.puestos') }}">Puestos</a>
+    <span>/</span>
+    <a href="{{ url_for('estado_bus.puestos_detalle', codigo_ruta=ruta.ruta) }}">{{ ruta.ruta }}</a>
+    <span>/</span>
+    <a href="{{ url_for('estado_bus.puestos_ruta', codigo_ruta=ruta.ruta, turno=turno) }}">Turno {{ turno }}</a>
+    <span>/</span>
+    <span>Admin</span>
+  </div>
+{% endblock %}
 {% block content %}
-  <p class="subtitle">Turno {{ turno }} &ndash; RUTA {{ ruta.ruta }} &ndash; {{ ruta.municipio | upper }}</p>
-  <p class="hint" style="margin-top:-8px;">Haz clic en un puesto para cambiar su estado (libre / ocupado)</p>
+  <p class="subtitle">Turno {{ turno }} &middot; {{ ruta.municipio }}</p>
+  <p class="hint" style="margin-top:-8px;">Haz clic en un puesto para cambiar su estado</p>
 
   <div class="legend">
     <span><i class="dot verde"></i> Libre</span>
@@ -30,7 +41,7 @@
     </div>
   </div>
 
-  <p class="hint">Los cambios se guardan de inmediato para este turno y ruta, y se reflejan en su vista pública de Puestos.</p>
+  <p class="hint">Los cambios se guardan de inmediato para este turno y ruta.</p>
 
   <script>
     const grid = document.getElementById('bus-grid');

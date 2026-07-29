@@ -1,0 +1,28 @@
+{% extends "estado_bus/base.html" %}
+{% block title %}Puestos {{ ruta.ruta }}{% endblock %}
+{% block breadcrumb %}
+  <div class="breadcrumb">
+    <a href="{{ url_for('estado_bus.puestos') }}">Puestos</a>
+    <span>/</span>
+    <span>{{ ruta.ruta }}</span>
+  </div>
+{% endblock %}
+{% block content %}
+  <div class="ruta-hero">
+    <div class="ruta-hero-codigo">{{ ruta.ruta }}</div>
+    <div class="ruta-hero-info">
+      <p class="ruta-hero-municipio">{{ ruta.municipio }}</p>
+      <p class="ruta-hero-detalle">{{ ruta.conductor }} &middot; {{ ruta.placa }}</p>
+    </div>
+  </div>
+
+  <p class="subtitle">Elige el turno que quieres consultar</p>
+  <div class="turnos-grid">
+    {% for t in turnos %}
+      <a class="turno-tile" href="{{ url_for('estado_bus.puestos_ruta', codigo_ruta=ruta.ruta, turno=t) }}">
+        <span class="turno-tile-numero">{{ t }}</span>
+        <span class="turno-tile-label">Turno {{ t }}</span>
+      </a>
+    {% endfor %}
+  </div>
+{% endblock %}

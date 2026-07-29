@@ -1,22 +1,13 @@
 {% extends "estado_bus/base.html" %}
 {% block title %}Puestos{% endblock %}
 {% block content %}
-  <p class="subtitle">Elige la ruta y el turno para ver su mapa de puestos</p>
-  <div class="rutas-list">
+  <p class="subtitle">Elige una ruta para ver la disponibilidad de sus puestos</p>
+  <div class="rutas-grid">
     {% for r in rutas %}
-      <div class="ruta-card">
-        <div class="ruta-card-header">
-          <span class="ruta-codigo">{{ r.ruta }}</span>
-          <span class="ruta-municipio">{{ r.municipio }}</span>
-        </div>
-        <div class="turnos-row">
-          {% for t in turnos %}
-            <a class="turno-link" href="{{ url_for('estado_bus.puestos_ruta', codigo_ruta=r.ruta, turno=t) }}">
-              Turno {{ t }} &ndash; {{ r.ruta }}
-            </a>
-          {% endfor %}
-        </div>
-      </div>
+      <a class="ruta-tile" href="{{ url_for('estado_bus.puestos_detalle', codigo_ruta=r.ruta) }}">
+        <span class="ruta-tile-codigo">{{ r.ruta }}</span>
+        <span class="ruta-tile-municipio">{{ r.municipio }}</span>
+      </a>
     {% endfor %}
   </div>
 {% endblock %}

@@ -1,11 +1,11 @@
 {% extends "estado_bus/base.html" %}
 {% block title %}Inicio{% endblock %}
 {% block content %}
-  <p class="subtitle">Estas son algunas de las rutas activas del sistema:</p>
+  <p class="subtitle">Rutas activas del sistema de transporte</p>
   <div class="chip-grid">
     {% for r in rutas_azar %}
       <span class="chip">{{ r.ruta }}</span>
     {% endfor %}
   </div>
-  <p class="hint">Se muestra una selección aleatoria en cada carga. Consulta la pestaña <strong>Rutas</strong> para ver el listado completo con conductor y placa.</p>
+  <p class="hint">Selección aleatoria en cada carga. Consulta <strong>Rutas</strong> para el listado completo con conductor y placa, o <strong>Puestos</strong> para la disponibilidad de cada bus.</p>
 {% endblock %}

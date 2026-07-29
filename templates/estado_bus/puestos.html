@@ -1,7 +1,16 @@
 {% extends "estado_bus/base.html" %}
 {% block title %}Puestos {{ ruta.ruta }} T{{ turno }}{% endblock %}
+{% block breadcrumb %}
+  <div class="breadcrumb">
+    <a href="{{ url_for('estado_bus.puestos') }}">Puestos</a>
+    <span>/</span>
+    <a href="{{ url_for('estado_bus.puestos_detalle', codigo_ruta=ruta.ruta) }}">{{ ruta.ruta }}</a>
+    <span>/</span>
+    <span>Turno {{ turno }}</span>
+  </div>
+{% endblock %}
 {% block content %}
-  <p class="subtitle">Turno {{ turno }} &ndash; RUTA {{ ruta.ruta }} &ndash; {{ ruta.municipio | upper }}</p>
+  <p class="subtitle">Turno {{ turno }} &middot; {{ ruta.municipio }}</p>
   <p class="hint" style="margin-top:-8px;">{{ ruta.conductor }} &middot; {{ ruta.placa }}</p>
 
   <div class="legend">
@@ -28,7 +37,5 @@
     </div>
   </div>
 
-  <p class="hint">Este mapa es propio del Turno {{ turno }} de la ruta {{ ruta.ruta }}. Los otros turnos tienen su propio mapa independiente.</p>
-  <a class="admin-link" href="{{ url_for('estado_bus.puestos_admin', codigo_ruta=ruta.ruta, turno=turno) }}">Panel de administración &rarr;</a>
-  <a class="admin-link" href="{{ url_for('estado_bus.puestos') }}">&larr; Ver otra ruta / turno</a>
+  <a class="admin-link primary" href="{{ url_for('estado_bus.puestos_admin', codigo_ruta=ruta.ruta, turno=turno) }}">Administrar puestos &rarr;</a>
 {% endblock %}

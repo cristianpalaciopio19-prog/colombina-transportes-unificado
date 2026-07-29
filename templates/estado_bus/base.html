@@ -9,19 +9,31 @@
 <body>
   <header class="topbar">
     <a class="brand" href="{{ url_for('home') }}">&larr; Portal</a>
-    <h1>Estado del Bus</h1>
+    <div class="brand-title">
+      <span class="brand-mark">CT</span>
+      <h1>Estado del Bus</h1>
+    </div>
+    <span class="brand-spacer"></span>
   </header>
 
   <nav class="tabs">
-    <a href="{{ url_for('estado_bus.inicio') }}" class="{{ 'active' if active=='inicio' else '' }}">Inicio</a>
-    <a href="{{ url_for('estado_bus.puestos') }}" class="{{ 'active' if active=='puestos' else '' }}">Puestos</a>
-    <a href="{{ url_for('estado_bus.rutas') }}" class="{{ 'active' if active=='rutas' else '' }}">Rutas</a>
+    <a href="{{ url_for('estado_bus.inicio') }}" class="{{ 'active' if active=='inicio' else '' }}">
+      <span class="tab-icon">🏠</span> Inicio
+    </a>
+    <a href="{{ url_for('estado_bus.puestos') }}" class="{{ 'active' if active=='puestos' else '' }}">
+      <span class="tab-icon">💺</span> Puestos
+    </a>
+    <a href="{{ url_for('estado_bus.rutas') }}" class="{{ 'active' if active=='rutas' else '' }}">
+      <span class="tab-icon">🗺️</span> Rutas
+    </a>
   </nav>
+
+  {% block breadcrumb %}{% endblock %}
 
   <main class="content">
     {% block content %}{% endblock %}
   </main>
 
-  <footer>Colombina S.A. &middot; Planta Confitería PL1</footer>
+  <footer>Colombina S.A. &middot; Transportes</footer>
 </body>
 </html>

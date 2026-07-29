@@ -120,8 +120,14 @@ def inicio():
 # --- Puestos ---------------------------------------------------------------
 @estado_bus_bp.route("/puestos")
 def puestos():
+    return render_template("estado_bus/puestos_lista.html", rutas=RUTAS, active="puestos")
+
+
+@estado_bus_bp.route("/puestos/<codigo_ruta>")
+def puestos_detalle(codigo_ruta):
+    ruta = obtener_ruta_o_404(codigo_ruta)
     return render_template(
-        "estado_bus/puestos_lista.html", rutas=RUTAS, turnos=TURNOS, active="puestos"
+        "estado_bus/puestos_detalle.html", ruta=ruta, turnos=TURNOS, active="puestos"
     )
 
 
