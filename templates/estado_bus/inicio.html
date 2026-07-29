@@ -11,10 +11,10 @@
   <p class="subtitle">Rutas activas del sistema de transporte</p>
   <div class="chip-grid">
     {% for r in rutas_azar %}
-      <span class="chip">{{ r.ruta }}</span>
+      <a class="chip" href="{{ url_for('estado_bus.puestos_detalle', codigo_ruta=r.ruta) }}">{{ r.ruta }}</a>
     {% endfor %}
   </div>
-  <p class="hint">Selección aleatoria en cada carga. Consulta <strong>Rutas</strong> para el listado completo con conductor y placa, o <strong>Puestos</strong> para la disponibilidad de cada bus.</p>
+  <p class="hint">Selección aleatoria en cada carga. Toca una ruta para ver sus puestos, o consulta <strong>Rutas</strong> para el listado completo con conductor y placa.</p>
 
   <div class="en-vivo-panel">
     <div class="en-vivo-panel-header"><span class="en-vivo-dot"></span> En vivo</div>

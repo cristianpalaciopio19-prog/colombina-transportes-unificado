@@ -253,6 +253,15 @@ footer {
   padding: 10px 20px;
   border-radius: 999px;
   box-shadow: 0 4px 12px rgba(11,44,107,0.08);
+  text-decoration: none;
+  display: inline-block;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+.chip:hover {
+  background: var(--blue);
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(11,44,107,0.18);
 }
 
 /* Puestos: grilla de rutas */
