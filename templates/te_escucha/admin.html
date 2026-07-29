@@ -31,7 +31,10 @@
 </head>
 <body>
   <div class="top">
-    <h1>Registros de PQR</h1>
+    <div>
+      <a href="{{ url_for('home') }}" style="color:#6b6d85;text-decoration:none;font-size:12.5px;font-weight:600;">&larr; Portal</a>
+      <h1 style="margin:4px 0 0;">Registros de PQR</h1>
+    </div>
     <span class="count">{{ registros|length }} registro(s)</span>
   </div>
 

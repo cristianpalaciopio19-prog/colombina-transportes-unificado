@@ -39,10 +39,20 @@ body {
   background: var(--azul);
   padding: 18px 24px;
   display: flex;
+  align-items: center;
   justify-content: center;
   box-shadow: 0 2px 12px rgba(0,0,0,0.15);
 }
 .topbar .logo { height: 46px; width: auto; }
+.topbar .volver-portal {
+  position: absolute;
+  left: 24px;
+  color: rgba(255,255,255,0.85);
+  text-decoration: none;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+}
 
 .wrap {
   position: relative;
