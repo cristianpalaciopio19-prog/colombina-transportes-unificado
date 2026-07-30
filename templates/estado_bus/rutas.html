@@ -3,17 +3,26 @@
 {% block content %}
   <p class="subtitle">Conductor, placa y paradas de cada ruta</p>
 
-  <div class="rutas-list">
+  <div class="rutas-buscador">
+    <input type="text" id="buscador-rutas" placeholder="Buscar por ruta, municipio o conductor...">
+  </div>
+
+  <p class="hint" id="rutas-contador">{{ rutas|length }} rutas</p>
+
+  <div class="rutas-list" id="rutas-list">
     {% for r in rutas %}
-      <details class="ruta-card">
+      <details class="ruta-card" data-buscar="{{ (r.ruta ~ ' ' ~ r.municipio ~ ' ' ~ r.conductor) | lower }}">
         <summary>
-          <span class="ruta-codigo">{{ r.ruta }}</span>
-          <span class="ruta-municipio">{{ r.municipio }}</span>
+          <div class="ruta-summary-izq">
+            <span class="ruta-codigo">{{ r.ruta }}</span>
+            <span class="ruta-municipio">{{ r.municipio }}</span>
+          </div>
+          <span class="paradas-badge">{{ r.paradas | length }} paradas</span>
         </summary>
         <div class="ruta-detalle">
-          <p><strong>Conductor:</strong> {{ r.conductor }}</p>
-          <p><strong>Placa:</strong> {{ r.placa }}</p>
-          <p><strong>Paradas:</strong></p>
+          <p><span class="detalle-icono">👤</span><strong>Conductor:</strong> {{ r.conductor }}</p>
+          <p><span class="detalle-icono">🚌</span><strong>Placa:</strong> {{ r.placa }}</p>
+          <p class="paradas-titulo"><span class="detalle-icono">📍</span><strong>Paradas:</strong></p>
           {% if r.paradas %}
             <ol class="paradas">
               {% for parada in r.paradas %}
@@ -26,5 +35,25 @@
         </div>
       </details>
     {% endfor %}
+    <p class="hint" id="rutas-sin-resultados" style="display:none;">No se encontraron rutas.</p>
   </div>
+
+  <script>
+    const buscador = document.getElementById('buscador-rutas');
+    const tarjetas = Array.from(document.querySelectorAll('#rutas-list .ruta-card'));
+    const contador = document.getElementById('rutas-contador');
+    const sinResultados = document.getElementById('rutas-sin-resultados');
+
+    buscador.addEventListener('input', function () {
+      const texto = buscador.value.trim().toLowerCase();
+      let visibles = 0;
+      tarjetas.forEach(function (card) {
+        const coincide = card.dataset.buscar.includes(texto);
+        card.style.display = coincide ? '' : 'none';
+        if (coincide) visibles++;
+      });
+      contador.textContent = `${visibles} ruta${visibles === 1 ? '' : 's'}`;
+      sinResultados.style.display = visibles === 0 ? 'block' : 'none';
+    });
+  </script>
 {% endblock %}
