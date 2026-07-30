@@ -49,19 +49,70 @@
     </div>
   </div>
 
-  <p class="hint" id="detalle-asiento">Pasa el mouse o toca un puesto para ver quién lo tiene asignado.</p>
+  <div class="ocupados-panel">
+    <div class="ocupados-panel-header">Puestos ocupados</div>
+    <div id="ocupados-lista" class="ocupados-lista">
+      {% set ocupados = asientos.items() | selectattr('1.estado', 'equalto', 'ocupado') | list %}
+      {% if ocupados %}
+        {% for numero, info in ocupados %}
+          <div class="ocupado-item">Puesto <strong>{{ numero }}</strong> &middot; {{ info.asignado_por or 'Sin nombre' }}</div>
+        {% endfor %}
+      {% else %}
+        <p class="hint">Ningún puesto ocupado todavía.</p>
+      {% endif %}
+    </div>
+  </div>
 
   <script>
     const grid = document.getElementById('bus-grid');
     const clave = grid.dataset.clave;
     const ruta = grid.dataset.ruta;
     const turno = grid.dataset.turno;
-    const detalle = document.getElementById('detalle-asiento');
+    const ocupadosLista = document.getElementById('ocupados-lista');
 
     let nombreAdmin = localStorage.getItem('estado_bus_nombre_admin') || '';
     if (!nombreAdmin) {
       nombreAdmin = window.prompt('¿Cuál es tu nombre? (se mostrará cuando asignes un puesto)', '') || 'Alguien';
       localStorage.setItem('estado_bus_nombre_admin', nombreAdmin);
+    }
+
+    function pintarAsiento(numero, estado, asignadoPor) {
+      const btn = grid.querySelector(`.asiento[data-numero="${numero}"]`);
+      if (!btn) return;
+      btn.classList.remove('libre', 'ocupado');
+      btn.classList.add(estado);
+      btn.dataset.asignado = asignadoPor || '';
+      btn.title = estado === 'ocupado' ? `Ocupado por ${asignadoPor || 'sin nombre'}` : 'Libre';
+    }
+
+    function refrescarOcupados(asientos) {
+      const ocupados = [];
+      Object.keys(asientos).forEach(function (numero) {
+        if (asientos[numero].estado === 'ocupado') {
+          ocupados.push({ numero: numero, nombre: asientos[numero].asignado_por || 'Sin nombre' });
+        }
+      });
+      ocupados.sort(function (a, b) { return Number(a.numero) - Number(b.numero); });
+      if (ocupados.length === 0) {
+        ocupadosLista.innerHTML = '<p class="hint">Ningún puesto ocupado todavía.</p>';
+      } else {
+        ocupadosLista.innerHTML = ocupados
+          .map(function (o) { return `<div class="ocupado-item">Puesto <strong>${o.numero}</strong> &middot; ${o.nombre}</div>`; })
+          .join('');
+      }
+    }
+
+    function refrescarEstadoCompleto() {
+      fetch(`/estado-bus/puestos/${encodeURIComponent(ruta)}/${turno}/estado`)
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          const asientos = (data && data.asientos) || {};
+          Object.keys(asientos).forEach(function (numero) {
+            pintarAsiento(numero, asientos[numero].estado, asientos[numero].asignado_por);
+          });
+          refrescarOcupados(asientos);
+        })
+        .catch(function () {});
     }
 
     grid.querySelectorAll('.asiento.admin').forEach(function (btn) {
@@ -70,7 +121,6 @@
         const estabaOcupado = btn.classList.contains('ocupado');
         const asignadoAntes = btn.dataset.asignado;
 
-        // Si ya estaba ocupado por otra persona, confirma antes de liberarlo.
         if (estabaOcupado && asignadoAntes && asignadoAntes !== nombreAdmin) {
           const seguro = window.confirm(`Este puesto lo asignó ${asignadoAntes}. ¿Quieres liberarlo de todos modos?`);
           if (!seguro) return;
@@ -86,16 +136,7 @@
           body: body,
         })
           .then(function (res) { return res.json(); })
-          .then(function (data) {
-            if (!data || !data.estado) return;
-            btn.classList.remove('libre', 'ocupado');
-            btn.classList.add(data.estado);
-            btn.dataset.asignado = data.asignado_por || '';
-            btn.title = data.estado === 'ocupado' ? `Ocupado por ${data.asignado_por}` : 'Libre';
-            detalle.textContent = data.estado === 'ocupado'
-              ? `Puesto ${numero}: ahora ocupado por ${data.asignado_por}`
-              : `Puesto ${numero}: liberado`;
-          });
+          .then(function () { refrescarEstadoCompleto(); });
       });
     });
 
@@ -104,15 +145,6 @@
     const texto = document.getElementById('en-vivo-texto');
     let ultimoIdMostrado = null;
 
-    function actualizarAsientoDesdeFeed(numero, estado, nombre) {
-      const btn = grid.querySelector(`.asiento[data-numero="${numero}"]`);
-      if (!btn) return;
-      btn.classList.remove('libre', 'ocupado');
-      btn.classList.add(estado);
-      btn.dataset.asignado = estado === 'ocupado' ? (nombre || '') : '';
-      btn.title = estado === 'ocupado' ? `Ocupado por ${nombre}` : 'Libre';
-    }
-
     function consultarActividad() {
       fetch(`/estado-bus/puestos/${encodeURIComponent(ruta)}/${turno}/actividad`)
         .then(function (res) { return res.json(); })
@@ -120,7 +152,6 @@
           const eventos = (data && data.eventos) || [];
           if (eventos.length === 0) { banner.style.display = 'none'; return; }
           const e = eventos[0];
-          actualizarAsientoDesdeFeed(e.numero, e.estado, e.nombre);
           const clave = `${e.ts}-${e.numero}`;
           if (clave === ultimoIdMostrado) return;
           ultimoIdMostrado = clave;
@@ -130,7 +161,10 @@
         })
         .catch(function () {});
     }
-    consultarActividad();
-    setInterval(consultarActividad, 3000);
+
+    setInterval(function () {
+      refrescarEstadoCompleto();
+      consultarActividad();
+    }, 3000);
   </script>
 {% endblock %}

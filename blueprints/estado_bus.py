@@ -280,6 +280,13 @@ def puestos_actividad(codigo_ruta, turno):
     return jsonify(eventos=obtener_actividad_reciente(codigo_ruta=codigo_ruta, turno=turno))
 
 
+@estado_bus_bp.route("/puestos/<codigo_ruta>/<int:turno>/estado")
+def puestos_estado(codigo_ruta, turno):
+    obtener_ruta_o_404(codigo_ruta)
+    validar_turno_o_404(turno)
+    return jsonify(asientos=obtener_asientos(codigo_ruta, turno))
+
+
 @estado_bus_bp.route("/actividad")
 def actividad_global():
     return jsonify(eventos=obtener_actividad_reciente())

@@ -46,7 +46,19 @@
     </div>
   </div>
 
-  <p class="hint" id="detalle-asiento">Toca un puesto para ver quién lo tiene asignado.</p>
+  <div class="ocupados-panel">
+    <div class="ocupados-panel-header">Puestos ocupados</div>
+    <div id="ocupados-lista" class="ocupados-lista">
+      {% set ocupados = asientos.items() | selectattr('1.estado', 'equalto', 'ocupado') | list %}
+      {% if ocupados %}
+        {% for numero, info in ocupados %}
+          <div class="ocupado-item" data-item-numero="{{ numero }}">Puesto <strong>{{ numero }}</strong> &middot; {{ info.asignado_por or 'Sin nombre' }}</div>
+        {% endfor %}
+      {% else %}
+        <p class="hint" id="ocupados-vacio">Ningún puesto ocupado todavía.</p>
+      {% endif %}
+    </div>
+  </div>
 
   <a class="admin-link primary" href="{{ url_for('estado_bus.puestos_admin', codigo_ruta=ruta.ruta, turno=turno) }}">Administrar puestos &rarr;</a>
 
@@ -55,27 +67,41 @@
     const turnoNum = "{{ turno }}";
     const banner = document.getElementById('en-vivo');
     const texto = document.getElementById('en-vivo-texto');
-    const detalle = document.getElementById('detalle-asiento');
+    const ocupadosLista = document.getElementById('ocupados-lista');
     let ultimoIdMostrado = null;
 
-    document.querySelectorAll('.asiento[data-numero]').forEach(function (el) {
-      el.addEventListener('click', function () {
-        const numero = el.dataset.numero;
-        const asignado = el.dataset.asignado;
-        const ocupado = el.classList.contains('ocupado');
-        detalle.textContent = ocupado
-          ? (asignado ? `Puesto ${numero}: ocupado por ${asignado}` : `Puesto ${numero}: ocupado`)
-          : `Puesto ${numero}: libre`;
-      });
-    });
-
-    function actualizarAsiento(numero, estado, asignadoPor) {
+    function pintarAsiento(numero, estado, asignadoPor) {
       const el = document.getElementById(`asiento-${numero}`);
       if (!el) return;
       el.classList.remove('libre', 'ocupado');
       el.classList.add(estado);
       el.dataset.asignado = asignadoPor || '';
-      el.title = (estado === 'ocupado' && asignadoPor) ? `Ocupado por ${asignadoPor}` : (estado === 'ocupado' ? 'Ocupado' : 'Libre');
+      el.title = estado === 'ocupado' ? `Ocupado por ${asignadoPor || 'sin nombre'}` : 'Libre';
+    }
+
+    function refrescarEstadoCompleto() {
+      fetch(`/estado-bus/puestos/${encodeURIComponent(rutaCodigo)}/${turnoNum}/estado`)
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          const asientos = (data && data.asientos) || {};
+          const ocupados = [];
+          Object.keys(asientos).forEach(function (numero) {
+            const info = asientos[numero];
+            pintarAsiento(numero, info.estado, info.asignado_por);
+            if (info.estado === 'ocupado') {
+              ocupados.push({ numero: numero, nombre: info.asignado_por || 'Sin nombre' });
+            }
+          });
+          ocupados.sort(function (a, b) { return Number(a.numero) - Number(b.numero); });
+          if (ocupados.length === 0) {
+            ocupadosLista.innerHTML = '<p class="hint">Ningún puesto ocupado todavía.</p>';
+          } else {
+            ocupadosLista.innerHTML = ocupados
+              .map(function (o) { return `<div class="ocupado-item">Puesto <strong>${o.numero}</strong> &middot; ${o.nombre}</div>`; })
+              .join('');
+          }
+        })
+        .catch(function () {});
     }
 
     function consultarActividad() {
@@ -85,7 +111,6 @@
           const eventos = (data && data.eventos) || [];
           if (eventos.length === 0) { banner.style.display = 'none'; return; }
           const e = eventos[0];
-          actualizarAsiento(e.numero, e.estado, e.estado === 'ocupado' ? e.nombre : null);
           const clave = `${e.ts}-${e.numero}`;
           if (clave === ultimoIdMostrado) return;
           ultimoIdMostrado = clave;
@@ -95,7 +120,10 @@
         })
         .catch(function () {});
     }
-    consultarActividad();
-    setInterval(consultarActividad, 3000);
+
+    setInterval(function () {
+      refrescarEstadoCompleto();
+      consultarActividad();
+    }, 3000);
   </script>
 {% endblock %}
