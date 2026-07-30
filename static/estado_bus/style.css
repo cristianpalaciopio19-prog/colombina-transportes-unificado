@@ -123,6 +123,85 @@ footer {
   padding: 20px;
 }
 
+/* Hero de Inicio */
+.hero {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--navy) 0%, var(--blue) 100%);
+  border-radius: 18px;
+  padding: 28px 20px;
+  text-align: center;
+  color: #fff;
+  margin-bottom: 18px;
+  box-shadow: 0 10px 26px rgba(11,44,107,0.2);
+}
+.hero-dot {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+}
+.hero-dot-1 { width: 160px; height: 160px; top: -70px; left: -50px; }
+.hero-dot-2 { width: 120px; height: 120px; bottom: -60px; right: -40px; background: rgba(242,169,0,0.15); }
+.hero-mark {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 12px;
+  background: var(--gold);
+  color: var(--navy);
+  font-family: 'Poppins', sans-serif;
+  font-weight: 800;
+  font-size: 0.85rem;
+  border-radius: 12px;
+}
+.hero-titulo {
+  position: relative;
+  z-index: 1;
+  font-family: 'Poppins', sans-serif;
+  font-size: 1.4rem;
+  margin: 0 0 4px;
+}
+.hero-subtitulo {
+  position: relative;
+  z-index: 1;
+  color: var(--sky);
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.stat-tile {
+  background: #fff;
+  border-radius: 12px;
+  padding: 14px 8px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(11,44,107,0.08);
+  border-bottom: 3px solid var(--gold);
+}
+.stat-numero {
+  display: block;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 800;
+  font-size: 1.4rem;
+  color: var(--navy);
+}
+.stat-label {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--blue);
+  font-weight: 600;
+  margin-top: 2px;
+}
+
 /* Animación: bus recorriendo la carretera */
 .carretera-wrap {
   background: linear-gradient(180deg, #E8F1FF 0%, #F4F7FC 100%);

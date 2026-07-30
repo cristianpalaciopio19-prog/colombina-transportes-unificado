@@ -173,7 +173,14 @@ def distribucion_bus(total):
 @estado_bus_bp.route("/")
 def inicio():
     rutas_azar = random.sample(RUTAS, k=min(6, len(RUTAS)))
-    return render_template("estado_bus/inicio.html", rutas_azar=rutas_azar, active="inicio")
+    return render_template(
+        "estado_bus/inicio.html",
+        rutas_azar=rutas_azar,
+        total_rutas=len(RUTAS),
+        total_turnos=len(TURNOS),
+        total_asientos=TOTAL_ASIENTOS,
+        active="inicio",
+    )
 
 
 # --- Puestos ---------------------------------------------------------------

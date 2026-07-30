@@ -1,6 +1,29 @@
 {% extends "estado_bus/base.html" %}
 {% block title %}Inicio{% endblock %}
 {% block content %}
+  <div class="hero">
+    <div class="hero-dot hero-dot-1"></div>
+    <div class="hero-dot hero-dot-2"></div>
+    <div class="hero-mark">CT</div>
+    <h2 class="hero-titulo" id="hero-saludo">Bienvenido</h2>
+    <p class="hero-subtitulo">Sistema de transporte de Colombina S.A. &middot; Valle del Cauca</p>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-tile">
+      <span class="stat-numero">{{ total_rutas }}</span>
+      <span class="stat-label">Rutas activas</span>
+    </div>
+    <div class="stat-tile">
+      <span class="stat-numero">{{ total_turnos }}</span>
+      <span class="stat-label">Turnos al día</span>
+    </div>
+    <div class="stat-tile">
+      <span class="stat-numero">{{ total_asientos }}</span>
+      <span class="stat-label">Puestos por bus</span>
+    </div>
+  </div>
+
   <div class="carretera-wrap">
     <div class="carretera-etiqueta" id="carretera-etiqueta">Ruta {{ rutas_azar[0].ruta }}</div>
     <div class="carretera">
@@ -24,6 +47,10 @@
   </div>
 
   <script>
+    const saludo = document.getElementById('hero-saludo');
+    const hora = new Date().getHours();
+    saludo.textContent = hora < 12 ? 'Buenos días' : (hora < 19 ? 'Buenas tardes' : 'Buenas noches');
+
     const rutasChip = {{ rutas_azar | map(attribute='ruta') | list | tojson }};
     const etiqueta = document.getElementById('carretera-etiqueta');
     const carro = document.getElementById('carro');
