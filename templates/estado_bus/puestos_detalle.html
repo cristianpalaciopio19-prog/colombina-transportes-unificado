@@ -19,9 +19,13 @@
   <p class="subtitle">Elige el turno que quieres consultar</p>
   <div class="turnos-grid">
     {% for t in turnos %}
+      {% set hora = ruta.horarios[t - 1] if ruta.horarios and ruta.horarios|length >= t else none %}
       <a class="turno-tile" href="{{ url_for('estado_bus.puestos_ruta', codigo_ruta=ruta.ruta, turno=t) }}">
         <span class="turno-tile-numero">{{ t }}</span>
         <span class="turno-tile-label">Turno {{ t }}</span>
+        {% if hora %}
+          <span class="turno-tile-hora">{{ hora.replace('AM', ' AM').replace('PM', ' PM') }}</span>
+        {% endif %}
       </a>
     {% endfor %}
   </div>

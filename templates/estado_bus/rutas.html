@@ -3,6 +3,21 @@
 {% block content %}
   <p class="subtitle">Conductor, placa y paradas de cada ruta</p>
 
+  <div class="stats-grid stats-grid-mini">
+    <div class="stat-tile">
+      <span class="stat-numero">{{ rutas|length }}</span>
+      <span class="stat-label">Rutas</span>
+    </div>
+    <div class="stat-tile">
+      <span class="stat-numero">{{ total_municipios }}</span>
+      <span class="stat-label">Municipios</span>
+    </div>
+    <div class="stat-tile">
+      <span class="stat-numero">{{ total_paradas }}</span>
+      <span class="stat-label">Paradas totales</span>
+    </div>
+  </div>
+
   <div class="rutas-buscador">
     <input type="text" id="buscador-rutas" placeholder="Buscar por ruta, municipio o conductor...">
   </div>

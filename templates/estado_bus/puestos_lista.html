@@ -2,12 +2,39 @@
 {% block title %}Puestos{% endblock %}
 {% block content %}
   <p class="subtitle">Elige una ruta para ver la disponibilidad de sus puestos</p>
-  <div class="rutas-grid">
+
+  <div class="rutas-buscador">
+    <input type="text" id="buscador-puestos" placeholder="Buscar por ruta o municipio...">
+  </div>
+  <p class="hint" id="puestos-contador">{{ rutas|length }} rutas</p>
+
+  <div class="rutas-grid" id="rutas-grid">
     {% for r in rutas %}
-      <a class="ruta-tile" href="{{ url_for('estado_bus.puestos_detalle', codigo_ruta=r.ruta) }}">
+      <a class="ruta-tile" data-buscar="{{ (r.ruta ~ ' ' ~ r.municipio) | lower }}"
+         href="{{ url_for('estado_bus.puestos_detalle', codigo_ruta=r.ruta) }}">
         <span class="ruta-tile-codigo">{{ r.ruta }}</span>
         <span class="ruta-tile-municipio">{{ r.municipio }}</span>
       </a>
     {% endfor %}
   </div>
+  <p class="hint" id="puestos-sin-resultados" style="display:none;">No se encontraron rutas.</p>
+
+  <script>
+    const buscador = document.getElementById('buscador-puestos');
+    const tarjetas = Array.from(document.querySelectorAll('#rutas-grid .ruta-tile'));
+    const contador = document.getElementById('puestos-contador');
+    const sinResultados = document.getElementById('puestos-sin-resultados');
+
+    buscador.addEventListener('input', function () {
+      const texto = buscador.value.trim().toLowerCase();
+      let visibles = 0;
+      tarjetas.forEach(function (tile) {
+        const coincide = tile.dataset.buscar.includes(texto);
+        tile.style.display = coincide ? '' : 'none';
+        if (coincide) visibles++;
+      });
+      contador.textContent = `${visibles} ruta${visibles === 1 ? '' : 's'}`;
+      sinResultados.style.display = visibles === 0 ? 'block' : 'none';
+    });
+  </script>
 {% endblock %}

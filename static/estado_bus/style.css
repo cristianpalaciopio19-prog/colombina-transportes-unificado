@@ -179,6 +179,8 @@ footer {
   gap: 10px;
   margin-bottom: 20px;
 }
+.stats-grid-mini { margin-bottom: 16px; }
+.stats-grid-mini .stat-numero { font-size: 1.1rem; }
 .stat-tile {
   background: #fff;
   border-radius: 12px;
@@ -479,6 +481,13 @@ footer {
   font-size: 0.85rem;
   font-weight: 700;
   color: var(--navy);
+}
+.turno-tile-hora {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--blue);
+  font-weight: 600;
+  margin-top: 3px;
 }
 
 /* Puestos: mapa de asientos */

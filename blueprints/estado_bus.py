@@ -302,4 +302,12 @@ def actividad_global():
 # --- Rutas -------------------------------------------------------------
 @estado_bus_bp.route("/rutas")
 def rutas():
-    return render_template("estado_bus/rutas.html", rutas=RUTAS, active="rutas")
+    total_paradas = sum(len(r["paradas"]) for r in RUTAS)
+    municipios = sorted({r["municipio"] for r in RUTAS})
+    return render_template(
+        "estado_bus/rutas.html",
+        rutas=RUTAS,
+        total_paradas=total_paradas,
+        total_municipios=len(municipios),
+        active="rutas",
+    )
