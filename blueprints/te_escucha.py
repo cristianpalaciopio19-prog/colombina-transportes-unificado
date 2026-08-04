@@ -57,11 +57,7 @@ def init_db():
 
 @te_escucha_bp.route("/", methods=["GET"])
 def index():
-    return render_template(
-        "te_escucha/index.html",
-        rutas_json=json.dumps(RUTAS, ensure_ascii=False),
-        tipos_pqr=TIPOS_PQR,
-    )
+    return redirect("https://colombina-te-escucha.onrender.com/", code=302)
 
 
 @te_escucha_bp.route("/enviar", methods=["POST"])
@@ -110,28 +106,7 @@ def enviar():
 @te_escucha_bp.route("/admin")
 def admin():
     clave = request.args.get("clave", "")
-    if clave != ADMIN_PASSWORD:
-        return render_template("te_escucha/admin_login.html")
-
-    tipo = request.args.get("tipo", "")
-
-    db = get_db()
-    if tipo:
-        registros = db.execute(
-            "SELECT * FROM pqr WHERE tipo_pqr = ? ORDER BY id DESC", (tipo,)
-        ).fetchall()
-    else:
-        registros = db.execute(
-            "SELECT * FROM pqr ORDER BY id DESC"
-        ).fetchall()
-
-    return render_template(
-        "te_escucha/admin.html",
-        registros=registros,
-        clave=clave,
-        filtro_tipo=tipo,
-        tipos_pqr=TIPOS_PQR,
-    )
+    return redirect(f"https://colombina-te-escucha.onrender.com/admin?clave={clave}", code=302)
 
 
 @te_escucha_bp.route("/admin/detalle/<int:pqr_id>")
