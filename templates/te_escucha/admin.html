@@ -21,6 +21,17 @@
   .empty { text-align: center; color: #888; padding: 40px; }
   .top { display: flex; justify-content: space-between; align-items: center; }
   .count { color: #6b6d85; font-size: 14px; }
+  .filtros { margin: 18px 0; display: flex; align-items: center; gap: 10px; }
+  .filtros select {
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    font-family: 'Inter', sans-serif;
+    font-size: 13.5px;
+    color: #22243a;
+    background: #fff;
+  }
+  .filtros a.link-limpiar { color: #6b6d85; text-decoration: underline; font-size: 13px; }
   .acciones { display: flex; gap: 8px; align-items: center; white-space: nowrap; }
   .btn-ver { padding: 6px 12px; border-radius: 999px; background: #293184; color: #fff; text-decoration: none; font-size: 12.5px; font-weight: 600; }
   .btn-ver:hover { background: #1a1f5c; }
@@ -37,6 +48,19 @@
     </div>
     <span class="count">{{ registros|length }} registro(s)</span>
   </div>
+
+  <form class="filtros" method="GET">
+    <input type="hidden" name="clave" value="{{ clave }}">
+    <select name="tipo" onchange="this.form.submit()">
+      <option value="">Todos los tipos</option>
+      {% for t in tipos_pqr %}
+      <option value="{{ t }}" {% if filtro_tipo == t %}selected{% endif %}>{{ t }}</option>
+      {% endfor %}
+    </select>
+    {% if filtro_tipo %}
+    <a class="link-limpiar" href="{{ url_for('te_escucha.admin', clave=clave) }}">Limpiar filtro</a>
+    {% endif %}
+  </form>
 
   {% if registros %}
   <table>
@@ -57,6 +81,7 @@
         <a class="btn-ver" href="{{ url_for('te_escucha.admin_detalle', pqr_id=r['id'], clave=clave) }}">Ver detalle</a>
         <form method="POST" action="{{ url_for('te_escucha.admin_eliminar', pqr_id=r['id']) }}" onsubmit="return confirm('¿Eliminar este registro de forma permanente?');">
           <input type="hidden" name="clave" value="{{ clave }}">
+          <input type="hidden" name="tipo" value="{{ filtro_tipo }}">
           <button type="submit" class="btn-eliminar">Eliminar</button>
         </form>
       </td>
@@ -64,7 +89,13 @@
     {% endfor %}
   </table>
   {% else %}
-  <div class="empty">Aún no hay registros de PQR.</div>
+  <div class="empty">
+    {% if filtro_tipo %}
+    No hay registros de tipo "{{ filtro_tipo }}".
+    {% else %}
+    Aún no hay registros de PQR.
+    {% endif %}
+  </div>
   {% endif %}
 </body>
 </html>

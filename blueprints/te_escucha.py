@@ -113,11 +113,25 @@ def admin():
     if clave != ADMIN_PASSWORD:
         return render_template("te_escucha/admin_login.html")
 
+    tipo = request.args.get("tipo", "")
+
     db = get_db()
-    registros = db.execute(
-        "SELECT * FROM pqr ORDER BY id DESC"
-    ).fetchall()
-    return render_template("te_escucha/admin.html", registros=registros, clave=clave)
+    if tipo:
+        registros = db.execute(
+            "SELECT * FROM pqr WHERE tipo_pqr = ? ORDER BY id DESC", (tipo,)
+        ).fetchall()
+    else:
+        registros = db.execute(
+            "SELECT * FROM pqr ORDER BY id DESC"
+        ).fetchall()
+
+    return render_template(
+        "te_escucha/admin.html",
+        registros=registros,
+        clave=clave,
+        filtro_tipo=tipo,
+        tipos_pqr=TIPOS_PQR,
+    )
 
 
 @te_escucha_bp.route("/admin/detalle/<int:pqr_id>")
@@ -141,8 +155,10 @@ def admin_eliminar(pqr_id):
     if clave != ADMIN_PASSWORD:
         return render_template("te_escucha/admin_login.html")
 
+    tipo = request.form.get("tipo", "")
+
     db = get_db()
     db.execute("DELETE FROM pqr WHERE id = ?", (pqr_id,))
     db.commit()
     flash("Registro eliminado.", "success")
-    return redirect(url_for("te_escucha.admin", clave=clave))
+    return redirect(url_for("te_escucha.admin", clave=clave, tipo=tipo))
