@@ -1,0 +1,15 @@
+<div class="admin-barra">
+  <div>
+    <strong>Panel de reservas</strong>
+    <small>Sesión: {{ session.get('eb_admin_nombre', 'Administrador') }}</small>
+  </div>
+  <nav>
+    <a href="{{ url_for('estado_bus.admin_panel') }}">Resumen</a>
+    <a href="{{ url_for('estado_bus.admin_qr') }}">Códigos QR</a>
+    <a href="{{ url_for('estado_bus.admin_exportar') }}">Exportar CSV</a>
+    <a href="{{ url_for('estado_bus.admin_logout') }}">Salir</a>
+  </nav>
+</div>
+{% with mensajes = get_flashed_messages(with_categories=true) %}
+  {% for cat, msg in mensajes %}<div class="flash {{ cat }}">{{ msg }}</div>{% endfor %}
+{% endwith %}

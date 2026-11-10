@@ -1,0 +1,266 @@
+{% extends "estado_bus/base.html" %}
+{% block title %}Reservar puesto {{ ruta.ruta }} · Turno {{ turno }}{% endblock %}
+{% block nav %}{% endblock %}
+{% block content %}
+<div class="rv" id="rv"
+     data-ruta="{{ ruta.ruta }}" data-turno="{{ turno }}" data-k="{{ token }}"
+     data-estado-url="{{ url_for('estado_bus.puestos_estado', codigo_ruta=ruta.ruta, turno=turno) }}"
+     data-reservar-url="{{ url_for('estado_bus.qr_reservar_post', codigo_ruta=ruta.ruta, turno=turno) }}">
+
+  <section class="rv-head">
+    <div class="rv-codigo">{{ ruta.ruta }}</div>
+    <div class="rv-head-info">
+      <p class="rv-municipio">{{ ruta.municipio }}</p>
+      <p class="rv-turno">Turno {{ turno }}{% if hora %} &middot; {{ hora.replace('AM', ' AM').replace('PM', ' PM') }}{% endif %}</p>
+      <p class="rv-detalle">{{ ruta.conductor }} &middot; {{ ruta.placa }}</p>
+    </div>
+  </section>
+
+  {% set n_ocup = asientos.values() | selectattr('estado', 'equalto', 'ocupado') | list | length %}
+  <section class="rv-stats">
+    <div class="rv-stat libre"><span id="rv-libres">{{ total - n_ocup }}</span><small>Disponibles</small></div>
+    <div class="rv-stat ocupado"><span id="rv-ocupados">{{ n_ocup }}</span><small>Ocupados</small></div>
+  </section>
+
+  <div class="rv-mio" id="rv-mio" hidden></div>
+
+  <p class="hint rv-instr" id="rv-instr">Toca un puesto <strong class="txt-verde">verde</strong> para reservarlo.</p>
+
+  <div class="legend">
+    <span><i class="dot verde"></i> Disponible</span>
+    <span><i class="dot rojo"></i> Ocupado</span>
+    <span><i class="dot sel"></i> Seleccionado</span>
+  </div>
+
+  <div class="bus-frame rv-bus">
+    <div class="bus-cabina"><span class="volante" aria-hidden="true"></span><span>Conductor</span><span class="puerta">Puerta</span></div>
+    <div class="bus-grid" id="bus-grid" role="group" aria-label="Plano de puestos">
+      {% for fila in filas %}
+        <div class="fila">
+          {% for numero in fila %}
+            {% if numero is none %}
+              <div class="pasillo"></div>
+            {% else %}
+              {% set info = asientos.get(numero, {}) %}
+              {% set ocupado = info.get('estado') == 'ocupado' %}
+              <button type="button" class="asiento rv-asiento {{ 'ocupado' if ocupado else 'libre' }}"
+                      data-numero="{{ numero }}" {% if ocupado %}disabled aria-disabled="true"{% endif %}
+                      aria-label="Puesto {{ numero }} {{ 'ocupado' if ocupado else 'disponible' }}">
+                <span class="numero">{{ numero }}</span>
+              </button>
+            {% endif %}
+          {% endfor %}
+        </div>
+      {% endfor %}
+    </div>
+    <div class="bus-trasera">Parte trasera</div>
+  </div>
+
+  <!-- Hoja inferior con el formulario -->
+  <div class="rv-sheet-fondo" id="rv-fondo" hidden></div>
+  <section class="rv-sheet" id="rv-sheet" hidden aria-modal="true" role="dialog" aria-labelledby="rv-sheet-titulo">
+    <div class="rv-sheet-asa"></div>
+    <div id="rv-form-wrap">
+      <h2 id="rv-sheet-titulo">Reservar puesto <span id="rv-num-sel" class="rv-num-badge"></span></h2>
+      <p class="rv-sheet-sub">Ruta {{ ruta.ruta }} &middot; Turno {{ turno }}</p>
+      <form id="rv-form" novalidate autocomplete="on">
+        <label for="rv-cin">CIN</label>
+        <input id="rv-cin" name="cin" inputmode="numeric" autocomplete="off" maxlength="20" required placeholder="Tu número de CIN">
+        <label for="rv-nombre">Nombre completo</label>
+        <input id="rv-nombre" name="nombre" autocomplete="name" maxlength="60" required placeholder="Nombre y apellido">
+        <p class="rv-privado">🔒 Tu CIN es privado: solo lo ve el administrador.</p>
+        <p class="rv-error" id="rv-error" role="alert" hidden></p>
+        <div class="rv-acciones">
+          <button type="button" class="btn-sec" id="rv-cancelar">Cancelar</button>
+          <button type="submit" class="btn-pri" id="rv-confirmar">Confirmar reserva</button>
+        </div>
+      </form>
+    </div>
+    <div id="rv-ok" class="rv-ok" hidden>
+      <div class="rv-ok-icono">✓</div>
+      <h2>¡Puesto reservado!</h2>
+      <div class="rv-ok-num" id="rv-ok-num"></div>
+      <dl class="rv-ok-datos">
+        <dt>Nombre</dt><dd id="rv-ok-nombre"></dd>
+        <dt>CIN</dt><dd id="rv-ok-cin"></dd>
+        <dt>Ruta / turno</dt><dd>{{ ruta.ruta }} &middot; Turno {{ turno }}</dd>
+        <dt>Hora</dt><dd id="rv-ok-hora"></dd>
+      </dl>
+      <p class="hint">Toma una captura de pantalla como comprobante. Si necesitas cambiar o liberar tu puesto, habla con el administrador de transporte.</p>
+      <button type="button" class="btn-pri" id="rv-cerrar">Listo</button>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  const rv = document.getElementById('rv');
+  const RUTA = rv.dataset.ruta, TURNO = rv.dataset.turno, K = rv.dataset.k;
+  const URL_ESTADO = rv.dataset.estadoUrl, URL_RESERVAR = rv.dataset.reservarUrl;
+  const TOTAL = {{ total }};
+  const CLAVE_LOCAL = `eb_reserva_${RUTA}_${TURNO}`;
+  const grid = document.getElementById('bus-grid');
+  const sheet = document.getElementById('rv-sheet');
+  const fondo = document.getElementById('rv-fondo');
+  const form = document.getElementById('rv-form');
+  const errorEl = document.getElementById('rv-error');
+  const btnConfirmar = document.getElementById('rv-confirmar');
+  const instr = document.getElementById('rv-instr');
+  let seleccionado = null;
+  let enviando = false;
+
+  function guardarLocal(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  function leerLocal(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+
+  // Recordar nombre en este celular para la próxima vez (el CIN no se guarda).
+  const nombreGuardado = leerLocal('eb_nombre');
+  if (nombreGuardado) document.getElementById('rv-nombre').value = nombreGuardado;
+
+  function mostrarMio(asientos) {
+    const el = document.getElementById('rv-mio');
+    const raw = leerLocal(CLAVE_LOCAL);
+    grid.querySelectorAll('.mio').forEach(function (b) { b.classList.remove('mio'); });
+    if (!raw) { el.hidden = true; return; }
+    try {
+      const d = JSON.parse(raw);
+      // Si el administrador liberó el puesto, se olvida el recordatorio local.
+      if (asientos && asientos[d.numero] && asientos[d.numero].estado === 'libre') {
+        try { localStorage.removeItem(CLAVE_LOCAL); } catch (e) {}
+        el.hidden = true; return;
+      }
+      el.textContent = '';
+      const b = document.createElement('strong'); b.textContent = `Tu puesto: ${d.numero}`;
+      el.append('🎫 ', b, ` · reservado ${d.hora}`);
+      el.hidden = false;
+      const btn = grid.querySelector(`[data-numero="${d.numero}"]`);
+      if (btn) btn.classList.add('mio');
+    } catch (e) { el.hidden = true; }
+  }
+
+  function pintar(asientos) {
+    let ocupados = 0;
+    Object.keys(asientos).forEach(function (n) {
+      const btn = grid.querySelector(`[data-numero="${n}"]`);
+      if (!btn) return;
+      const ocupado = asientos[n].estado === 'ocupado';
+      if (ocupado) ocupados++;
+      btn.classList.toggle('ocupado', ocupado);
+      btn.classList.toggle('libre', !ocupado);
+      btn.disabled = ocupado;
+      btn.setAttribute('aria-label', `Puesto ${n} ${ocupado ? 'ocupado' : 'disponible'}`);
+      if (ocupado && seleccionado === Number(n) && !enviando && sheet.dataset.modo !== 'ok') {
+        deseleccionar();
+        avisar(`El puesto ${n} acaba de ser ocupado. Elige otro.`);
+      }
+    });
+    document.getElementById('rv-ocupados').textContent = ocupados;
+    document.getElementById('rv-libres').textContent = TOTAL - ocupados;
+    if (TOTAL - ocupados === 0) instr.textContent = 'El bus está lleno: no hay puestos disponibles.';
+    mostrarMio(asientos);
+  }
+
+  function avisar(msg) {
+    instr.textContent = msg;
+    instr.classList.add('rv-aviso');
+    setTimeout(function () {
+      instr.classList.remove('rv-aviso');
+      instr.innerHTML = 'Toca un puesto <strong class="txt-verde">verde</strong> para reservarlo.';
+    }, 4000);
+  }
+
+  function seleccionar(n) {
+    deseleccionar();
+    seleccionado = n;
+    grid.querySelector(`[data-numero="${n}"]`).classList.add('sel');
+    document.getElementById('rv-num-sel').textContent = n;
+    errorEl.hidden = true;
+    abrirSheet('form');
+    setTimeout(function () {
+      const cin = document.getElementById('rv-cin');
+      (cin.value ? document.getElementById('rv-nombre') : cin).focus();
+    }, 250);
+  }
+
+  function deseleccionar() {
+    if (seleccionado !== null) {
+      const b = grid.querySelector(`[data-numero="${seleccionado}"]`);
+      if (b) b.classList.remove('sel');
+    }
+    seleccionado = null;
+    cerrarSheet();
+  }
+
+  function abrirSheet(modo) {
+    sheet.dataset.modo = modo;
+    document.getElementById('rv-form-wrap').hidden = modo !== 'form';
+    document.getElementById('rv-ok').hidden = modo !== 'ok';
+    sheet.hidden = false; fondo.hidden = false;
+    requestAnimationFrame(function () { sheet.classList.add('abierta'); fondo.classList.add('visible'); });
+  }
+  function cerrarSheet() {
+    sheet.classList.remove('abierta'); fondo.classList.remove('visible');
+    sheet.dataset.modo = '';
+    setTimeout(function () { if (!sheet.classList.contains('abierta')) { sheet.hidden = true; fondo.hidden = true; } }, 200);
+  }
+
+  grid.addEventListener('click', function (ev) {
+    const btn = ev.target.closest('.rv-asiento');
+    if (!btn || btn.disabled) return;
+    seleccionar(Number(btn.dataset.numero));
+  });
+  document.getElementById('rv-cancelar').addEventListener('click', deseleccionar);
+  fondo.addEventListener('click', function () { if (sheet.dataset.modo === 'form') deseleccionar(); });
+  document.getElementById('rv-cerrar').addEventListener('click', function () { seleccionado = null; cerrarSheet(); });
+
+  form.addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    if (enviando || seleccionado === null) return;
+    const cin = document.getElementById('rv-cin').value.trim();
+    const nombre = document.getElementById('rv-nombre').value.trim();
+    if (cin.length < 3) return mostrarError('Ingresa tu CIN.');
+    if (nombre.length < 3) return mostrarError('Ingresa tu nombre completo.');
+    enviando = true;
+    btnConfirmar.disabled = true; btnConfirmar.textContent = 'Reservando…';
+    fetch(URL_RESERVAR, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ k: K, numero: seleccionado, cin: cin, nombre: nombre }),
+    })
+      .then(function (res) { return res.json().catch(function () { return { ok: false, error: 'Error de conexión.' }; }); })
+      .then(function (data) {
+        if (data.asientos) pintar(data.asientos);
+        if (!data.ok) { mostrarError(data.error || 'No se pudo reservar.'); return; }
+        guardarLocal('eb_nombre', data.nombre);
+        guardarLocal(CLAVE_LOCAL, JSON.stringify({ numero: data.numero, hora: data.hora }));
+        document.getElementById('rv-ok-num').textContent = `Puesto ${data.numero}`;
+        document.getElementById('rv-ok-nombre').textContent = data.nombre;
+        document.getElementById('rv-ok-cin').textContent = data.cin;
+        document.getElementById('rv-ok-hora').textContent = data.hora;
+        document.getElementById('rv-cin').value = '';
+        const b = grid.querySelector(`[data-numero="${data.numero}"]`);
+        if (b) b.classList.remove('sel');
+        abrirSheet('ok');
+        mostrarMio();
+      })
+      .catch(function () { mostrarError('Sin conexión. Revisa tus datos móviles e intenta de nuevo.'); })
+      .finally(function () {
+        enviando = false;
+        btnConfirmar.disabled = false; btnConfirmar.textContent = 'Confirmar reserva';
+      });
+  });
+
+  function mostrarError(msg) { errorEl.textContent = msg; errorEl.hidden = false; }
+
+  function refrescar() {
+    if (document.hidden) return;
+    fetch(URL_ESTADO, { headers: { 'Accept': 'application/json' } })
+      .then(function (r) { return r.json(); })
+      .then(function (d) { if (d && d.asientos) pintar(d.asientos); })
+      .catch(function () {});
+  }
+  setInterval(refrescar, 4000);
+  document.addEventListener('visibilitychange', refrescar);
+  mostrarMio();
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,91 @@
+{% extends "estado_bus/base.html" %}
+{% block title %}Admin de reservas{% endblock %}
+{% block content %}
+  {% include "estado_bus/_admin_barra.html" %}
+
+  <section class="kpis">
+    <div class="kpi"><span>{{ total_ocupados }}</span><small>Puestos ocupados</small></div>
+    <div class="kpi"><span>{{ total_puestos - total_ocupados }}</span><small>Puestos libres</small></div>
+    <div class="kpi"><span>{{ reservas|length if not q else '—' }}</span><small>Reservas activas (QR)</small></div>
+  </section>
+
+  <h2 class="sec-titulo">Ocupación por ruta y turno</h2>
+  <div class="rutas-buscador"><input type="search" id="filtro-rutas" placeholder="Filtrar ruta o municipio…"></div>
+  <div class="tabla-wrap">
+    <table class="tabla ocupacion">
+      <thead><tr><th>Ruta</th>{% for t in turnos %}<th>Turno {{ t }}</th>{% endfor %}</tr></thead>
+      <tbody>
+        {% for r in rutas %}
+          <tr data-filtro="{{ (r.ruta ~ ' ' ~ r.municipio)|lower }}">
+            <td><strong>{{ r.ruta }}</strong><br><small>{{ r.municipio }}</small></td>
+            {% for t in turnos %}
+              {% set info = resumen.get((r.ruta, t), {'ocupados': 0, 'total': 40}) %}
+              {% set pct = (info.ocupados * 100 / info.total) if info.total else 0 %}
+              <td>
+                <a class="chip-ocup {{ 'lleno' if pct >= 100 else ('alto' if pct >= 75 else ('medio' if pct > 0 else 'vacio')) }}"
+                   href="{{ url_for('estado_bus.admin_bus', codigo_ruta=r.ruta, turno=t) }}">
+                  {{ info.ocupados }}/{{ info.total }}
+                </a>
+              </td>
+            {% endfor %}
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <h2 class="sec-titulo">Reservas activas</h2>
+  <form class="buscador-reservas" method="get">
+    <input type="search" name="q" value="{{ q }}" placeholder="Buscar por nombre, CIN o ruta">
+    <button type="submit" class="btn-pri">Buscar</button>
+    {% if q %}<a class="btn-sec" href="{{ url_for('estado_bus.admin_panel') }}">Limpiar</a>{% endif %}
+  </form>
+  {% if reservas %}
+    <div class="tabla-wrap">
+      <table class="tabla">
+        <thead><tr><th>Ruta</th><th>T</th><th>Puesto</th><th>Nombre</th><th>CIN</th><th>Reservado</th><th></th></tr></thead>
+        <tbody>
+          {% for r in reservas %}
+            <tr>
+              <td>{{ r.ruta }}</td><td>{{ r.turno }}</td><td><strong>{{ r.numero }}</strong></td>
+              <td>{{ r.nombre }}{% if r.origen == 'admin' %} <span class="tag">admin</span>{% endif %}</td>
+              <td class="mono">{{ r.cin }}</td>
+              <td><small>{{ r.creado_ts|hora_col }}</small></td>
+              <td><a href="{{ url_for('estado_bus.admin_bus', codigo_ruta=r.ruta, turno=r.turno) }}#p{{ r.numero }}">Gestionar</a></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="hint">{{ 'Sin resultados para "' ~ q ~ '".' if q else 'Todavía no hay reservas hechas por QR.' }}</p>
+  {% endif %}
+
+  {% if historial %}
+    <details class="historial">
+      <summary>Últimas reservas liberadas ({{ historial|length }})</summary>
+      <div class="tabla-wrap">
+        <table class="tabla">
+          <thead><tr><th>Ruta</th><th>T</th><th>Puesto</th><th>Nombre</th><th>CIN</th><th>Liberado</th><th>Por</th></tr></thead>
+          <tbody>
+            {% for r in historial %}
+              <tr>
+                <td>{{ r.ruta }}</td><td>{{ r.turno }}</td><td>{{ r.numero }}</td><td>{{ r.nombre }}</td>
+                <td class="mono">{{ r.cin }}</td><td><small>{{ r.liberado_ts|hora_col }}</small></td><td>{{ r.liberado_por or '' }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </details>
+  {% endif %}
+
+  <script>
+    document.getElementById('filtro-rutas').addEventListener('input', function (e) {
+      const q = e.target.value.trim().toLowerCase();
+      document.querySelectorAll('table.ocupacion tbody tr').forEach(function (tr) {
+        tr.hidden = q && !tr.dataset.filtro.includes(q);
+      });
+    });
+  </script>
+{% endblock %}

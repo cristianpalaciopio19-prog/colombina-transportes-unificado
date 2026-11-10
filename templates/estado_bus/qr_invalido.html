@@ -1,0 +1,11 @@
+{% extends "estado_bus/base.html" %}
+{% block title %}Código QR no válido{% endblock %}
+{% block nav %}{% endblock %}
+{% block content %}
+  <div class="aviso-card">
+    <div class="aviso-icono">⚠️</div>
+    <h2>Código QR no válido</h2>
+    <p>Para reservar un puesto escanea el código QR pegado en el bus de la ruta <strong>{{ ruta.ruta }}</strong>, turno {{ turno }}.</p>
+    <a class="btn-pri" href="{{ url_for('estado_bus.puestos_ruta', codigo_ruta=ruta.ruta, turno=turno) }}">Ver puestos de este bus</a>
+  </div>
+{% endblock %}

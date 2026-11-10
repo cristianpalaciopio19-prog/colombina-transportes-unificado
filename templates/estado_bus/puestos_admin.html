@@ -64,6 +64,7 @@
   </div>
 
   <script>
+    function esc(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
     const grid = document.getElementById('bus-grid');
     const clave = grid.dataset.clave;
     const ruta = grid.dataset.ruta;
@@ -97,7 +98,7 @@
         ocupadosLista.innerHTML = '<p class="hint">Ningún puesto ocupado todavía.</p>';
       } else {
         ocupadosLista.innerHTML = ocupados
-          .map(function (o) { return `<div class="ocupado-item">Puesto <strong>${o.numero}</strong> &middot; ${o.nombre}</div>`; })
+          .map(function (o) { return `<div class="ocupado-item">Puesto <strong>${o.numero}</strong> &middot; ${esc(o.nombre)}</div>`; })
           .join('');
       }
     }

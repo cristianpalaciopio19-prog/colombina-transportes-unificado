@@ -1,0 +1,14 @@
+{% extends "estado_bus/base.html" %}
+{% block title %}Admin de reservas{% endblock %}
+{% block content %}
+  <p class="subtitle">Panel de reservas de puestos</p>
+  <form class="login-form" method="post" action="{{ url_for('estado_bus.admin_login') }}">
+    <input type="hidden" name="siguiente" value="{{ siguiente }}">
+    <label for="nombre">Tu nombre</label>
+    <input type="text" id="nombre" name="nombre" maxlength="40" placeholder="Queda en el historial" autocomplete="name">
+    <label for="clave">Clave de administrador</label>
+    <input type="password" id="clave" name="clave" required autofocus>
+    {% if error %}<p class="rv-error">{{ error }}</p>{% endif %}
+    <button type="submit">Ingresar</button>
+  </form>
+{% endblock %}

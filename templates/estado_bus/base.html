@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}Estado del Bus{% endblock %} | Colombina Transportes</title>
+<meta name="theme-color" content="#0B2C6B">
 <link rel="stylesheet" href="{{ url_for('static', filename='estado_bus/style.css') }}">
 </head>
 <body>
@@ -16,6 +17,7 @@
     <span class="brand-spacer"></span>
   </header>
 
+  {% block nav %}
   <nav class="tabs">
     <a href="{{ url_for('estado_bus.inicio') }}" class="{{ 'active' if active=='inicio' else '' }}">
       <span class="tab-icon">🏠</span> Inicio
@@ -26,7 +28,11 @@
     <a href="{{ url_for('estado_bus.rutas') }}" class="{{ 'active' if active=='rutas' else '' }}">
       <span class="tab-icon">🗺️</span> Rutas
     </a>
+    <a href="{{ url_for('estado_bus.admin_panel') }}" class="{{ 'active' if active=='admin' else '' }}">
+      <span class="tab-icon">🔐</span> Admin
+    </a>
   </nav>
+  {% endblock %}
 
   {% block breadcrumb %}{% endblock %}
 

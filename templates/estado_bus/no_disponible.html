@@ -1,0 +1,10 @@
+{% extends "estado_bus/base.html" %}
+{% block title %}Servicio no disponible{% endblock %}
+{% block content %}
+  <div class="aviso-card">
+    <div class="aviso-icono">⏳</div>
+    <h2>Estamos conectando con la base de datos</h2>
+    <p>Intenta de nuevo en unos segundos. Si el problema continúa, avisa al administrador de transporte.</p>
+    <a class="btn-pri" href="javascript:location.reload()">Reintentar</a>
+  </div>
+{% endblock %}

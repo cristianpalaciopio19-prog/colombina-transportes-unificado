@@ -86,7 +86,7 @@
             const accion = e.estado === 'ocupado' ? 'está asignando' : 'liberó';
             const div = document.createElement('div');
             div.className = 'en-vivo-item';
-            div.innerHTML = `<strong>${e.nombre}</strong> ${accion} el puesto ${e.numero} en la ${e.ruta} (Turno ${e.turno}) <span class="en-vivo-hace">${tiempoRelativo(e.ts)}</span>`;
+            div.innerHTML = `<strong>${String(e.nombre).replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; })}</strong> ${accion} el puesto ${e.numero} en la ${e.ruta} (Turno ${e.turno}) <span class="en-vivo-hace">${tiempoRelativo(e.ts)}</span>`;
             lista.appendChild(div);
           });
         })

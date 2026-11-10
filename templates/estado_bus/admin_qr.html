@@ -1,0 +1,31 @@
+{% extends "estado_bus/base.html" %}
+{% block title %}Códigos QR de los buses{% endblock %}
+{% block content %}
+  <div class="no-print">
+    {% include "estado_bus/_admin_barra.html" %}
+    <form class="buscador-reservas" method="get">
+      <select name="ruta" onchange="this.form.submit()">
+        <option value="">Todas las rutas ({{ rutas|length * 3 }} códigos)</option>
+        {% for r in rutas %}<option value="{{ r.ruta }}" {{ 'selected' if r.ruta == filtro else '' }}>{{ r.ruta }} · {{ r.municipio }}</option>{% endfor %}
+      </select>
+      <button type="button" class="btn-pri" onclick="window.print()">🖨️ Imprimir</button>
+    </form>
+    <p class="hint">Cada código abre directamente la reserva de su ruta y turno. Pega cada uno en un lugar visible del bus correspondiente.</p>
+  </div>
+
+  <div class="qr-hoja">
+    {% for it in items %}
+      <div class="qr-etiqueta">
+        <div class="qr-etq-top">
+          <span class="qr-etq-ruta">{{ it.ruta.ruta }}</span>
+          <span class="qr-etq-turno">Turno {{ it.turno }}{% if it.hora %} · {{ it.hora.replace('AM', ' AM').replace('PM', ' PM') }}{% endif %}</span>
+        </div>
+        <img src="{{ url_for('estado_bus.admin_qr_svg', codigo_ruta=it.ruta.ruta, turno=it.turno) }}" alt="QR {{ it.ruta.ruta }} turno {{ it.turno }}" loading="lazy">
+        <div class="qr-etq-pie">
+          <strong>Escanea y reserva tu puesto</strong>
+          <small>Ruta {{ it.ruta.ruta }} · {{ it.ruta.municipio }}</small>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% endblock %}

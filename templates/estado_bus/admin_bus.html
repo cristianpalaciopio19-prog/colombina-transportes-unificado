@@ -1,0 +1,160 @@
+{% extends "estado_bus/base.html" %}
+{% block title %}Admin {{ ruta.ruta }} · Turno {{ turno }}{% endblock %}
+{% block breadcrumb %}
+  <div class="breadcrumb">
+    <a href="{{ url_for('estado_bus.admin_panel') }}">Admin</a>
+    <span>/</span>
+    <span>{{ ruta.ruta }} &middot; Turno {{ turno }}</span>
+  </div>
+{% endblock %}
+{% block content %}
+  {% include "estado_bus/_admin_barra.html" %}
+  {% set csrf = eb_csrf_token() %}
+  {% set ocupados = asientos.items() | selectattr('1.estado', 'equalto', 'ocupado') | list %}
+
+  <section class="rv-head">
+    <div class="rv-codigo">{{ ruta.ruta }}</div>
+    <div class="rv-head-info">
+      <p class="rv-municipio">{{ ruta.municipio }}</p>
+      <p class="rv-turno">Turno {{ turno }} &middot; {{ ocupados|length }}/{{ asientos|length }} ocupados</p>
+      <p class="rv-detalle">{{ ruta.conductor }} &middot; {{ ruta.placa }}</p>
+    </div>
+  </section>
+
+  <div class="turno-switch">
+    {% for t in [1, 2, 3] %}
+      <a class="{{ 'activo' if t == turno else '' }}" href="{{ url_for('estado_bus.admin_bus', codigo_ruta=ruta.ruta, turno=t) }}">Turno {{ t }}</a>
+    {% endfor %}
+  </div>
+
+  <div class="admin-grid">
+    <div>
+      <div class="legend">
+        <span><i class="dot verde"></i> Libre</span>
+        <span><i class="dot rojo"></i> Ocupado</span>
+      </div>
+      <div class="bus-frame">
+        <div class="bus-cabina"><span class="volante" aria-hidden="true"></span><span>Conductor</span><span class="puerta">Puerta</span></div>
+        <div class="bus-grid">
+          {% for fila in filas %}
+            <div class="fila">
+              {% for numero in fila %}
+                {% if numero is none %}
+                  <div class="pasillo"></div>
+                {% else %}
+                  {% set info = asientos.get(numero, {}) %}
+                  <a class="asiento {{ 'ocupado' if info.get('estado') == 'ocupado' else 'libre' }} {{ 'con-cin' if numero in por_numero else '' }}"
+                     href="#{{ 'p' ~ numero if info.get('estado') == 'ocupado' else 'manual' }}"
+                     data-numero="{{ numero }}" data-libre="{{ '1' if info.get('estado') != 'ocupado' else '' }}"
+                     title="{{ info.get('asignado_por') or 'Libre' }}">
+                    <span class="numero">{{ numero }}</span>
+                  </a>
+                {% endif %}
+              {% endfor %}
+            </div>
+          {% endfor %}
+        </div>
+        <div class="bus-trasera">Parte trasera</div>
+      </div>
+      <p class="hint">Los puestos con punto blanco fueron reservados con CIN.</p>
+    </div>
+
+    <div>
+      <h2 class="sec-titulo">Puestos ocupados ({{ ocupados|length }})</h2>
+      {% if not ocupados %}<p class="hint">Este bus no tiene puestos ocupados.</p>{% endif %}
+      {% for numero, info in ocupados %}
+        {% set r = por_numero.get(numero) %}
+        <article class="res-card" id="p{{ numero }}">
+          <div class="res-num">{{ numero }}</div>
+          <div class="res-info">
+            {% if r %}
+              <strong>{{ r.nombre }}</strong>
+              <span class="mono">CIN {{ r.cin }}</span>
+              <small>{{ 'Reservado por QR' if r.origen == 'qr' else 'Registrado por admin' }} &middot; {{ r.creado_ts|hora_col }}</small>
+              {% if r.nota %}<small class="nota">{{ r.nota }}</small>{% endif %}
+            {% else %}
+              <strong>{{ info.asignado_por or 'Sin nombre' }}</strong>
+              <small>Asignado desde el plano (sin CIN) &middot; {{ info.asignado_ts|hora_col }}</small>
+            {% endif %}
+          </div>
+          <div class="res-acciones">
+            <form method="post" action="{{ url_for('estado_bus.admin_liberar', codigo_ruta=ruta.ruta, turno=turno, numero=numero) }}"
+                  onsubmit="return confirm('¿Liberar el puesto {{ numero }}?');">
+              <input type="hidden" name="csrf" value="{{ csrf }}">
+              <button class="btn-peligro" type="submit">Liberar</button>
+            </form>
+            {% if r %}
+              <details class="res-mas">
+                <summary>Mover / editar</summary>
+                <form method="post" action="{{ url_for('estado_bus.admin_mover', reserva_id=r.id) }}" class="fila-form">
+                  <input type="hidden" name="csrf" value="{{ csrf }}">
+                  <label>Mover al puesto
+                    <select name="numero" required>
+                      {% for n in libres %}<option value="{{ n }}">{{ n }}</option>{% endfor %}
+                    </select>
+                  </label>
+                  <button class="btn-sec" type="submit" {{ 'disabled' if not libres else '' }}>Mover</button>
+                </form>
+                <form method="post" action="{{ url_for('estado_bus.admin_editar', reserva_id=r.id) }}" class="fila-form">
+                  <input type="hidden" name="csrf" value="{{ csrf }}">
+                  <label>CIN <input name="cin" value="{{ r.cin }}" required maxlength="20"></label>
+                  <label>Nombre <input name="nombre" value="{{ r.nombre }}" required maxlength="60"></label>
+                  <button class="btn-sec" type="submit">Guardar</button>
+                </form>
+              </details>
+            {% endif %}
+          </div>
+        </article>
+      {% endfor %}
+
+      <h2 class="sec-titulo" id="manual">Registrar reserva manual</h2>
+      <form class="card-form" method="post" action="{{ url_for('estado_bus.admin_reservar', codigo_ruta=ruta.ruta, turno=turno) }}">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <label>Puesto
+          <select name="numero" id="manual-numero" required>
+            {% for n in libres %}<option value="{{ n }}">{{ n }}</option>{% endfor %}
+          </select>
+        </label>
+        <label>CIN <input name="cin" required maxlength="20" inputmode="numeric"></label>
+        <label>Nombre <input name="nombre" required maxlength="60"></label>
+        <button class="btn-pri" type="submit" {{ 'disabled' if not libres else '' }}>Reservar</button>
+      </form>
+
+      <h2 class="sec-titulo">Código QR de este bus</h2>
+      <div class="qr-card">
+        <img src="{{ url_for('estado_bus.admin_qr_svg', codigo_ruta=ruta.ruta, turno=turno) }}" alt="QR ruta {{ ruta.ruta }} turno {{ turno }}" width="160" height="160">
+        <div>
+          <p class="mono qr-url">{{ qr_url }}</p>
+          <a class="btn-sec" href="{{ url_for('estado_bus.admin_qr', ruta=ruta.ruta) }}">Imprimir QR de esta ruta</a>
+          <a class="btn-sec" href="{{ qr_url }}" target="_blank" rel="noopener">Abrir como trabajador</a>
+        </div>
+      </div>
+
+      {% if ocupados %}
+        <form class="zona-peligro" method="post" action="{{ url_for('estado_bus.admin_liberar_todo', codigo_ruta=ruta.ruta, turno=turno) }}"
+              onsubmit="return confirm('Se liberarán los {{ ocupados|length }} puestos ocupados de la ruta {{ ruta.ruta }}, turno {{ turno }}. ¿Continuar?');">
+          <input type="hidden" name="csrf" value="{{ csrf }}">
+          <button class="btn-peligro" type="submit">Liberar todo el turno ({{ ocupados|length }})</button>
+          <small>Queda registrado en el historial.</small>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+
+  <script>
+    // Clic en un puesto libre: lo preselecciona en "Registrar reserva manual".
+    document.querySelectorAll('.bus-grid a.asiento[data-libre="1"]').forEach(function (a) {
+      a.addEventListener('click', function () {
+        const sel = document.getElementById('manual-numero');
+        if (sel) sel.value = a.dataset.numero;
+      });
+    });
+    // Resalta la tarjeta del puesto al llegar con #pN.
+    function resaltar() {
+      document.querySelectorAll('.res-card.destacada').forEach(function (e) { e.classList.remove('destacada'); });
+      const el = location.hash && document.querySelector(location.hash);
+      if (el && el.classList.contains('res-card')) el.classList.add('destacada');
+    }
+    window.addEventListener('hashchange', resaltar); resaltar();
+  </script>
+{% endblock %}
