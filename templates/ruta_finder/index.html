@@ -535,6 +535,7 @@
     #map { height: 420px; }
     .header-meta { display: none; }
   }
+.basemap-claro { filter: grayscale(0.55) brightness(1.06) contrast(0.92); }
 </style>
 </head>
 <body>
@@ -630,12 +631,31 @@ const activeZonas = new Set(Object.keys(ZONA_COLORS));
 
 const map = L.map('map', { zoomControl: false }).setView([4.22, -76.16], 11);
 
-// Basemap corporativo: cartografía clara y de alto contraste con las rutas
-L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-  attribution: '&copy; OpenStreetMap &copy; CARTO',
-  maxZoom: 19,
-  subdomains: 'abcd'
-}).addTo(map);
+// Mapa base. CARTO ahora exige clave de API ("API KEY REQUIRED"), así que se
+// usa OpenStreetMap (gratuito, sin clave). Se aclara un poco con CSS para que
+// las rutas resalten. Si OSM no carga, se cambia automáticamente a Esri.
+const BASEMAPS = [
+  {
+    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    opts: { maxZoom: 19, className: 'basemap-claro',
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' }
+  },
+  {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+    opts: { maxZoom: 19, className: 'basemap-claro', attribution: 'Tiles &copy; Esri' }
+  }
+];
+let basemapIdx = 0, basemapErrores = 0;
+let basemap = L.tileLayer(BASEMAPS[0].url, BASEMAPS[0].opts).addTo(map);
+basemap.on('tileerror', function onErr() {
+  basemapErrores++;
+  if (basemapErrores >= 6 && basemapIdx < BASEMAPS.length - 1) {
+    map.removeLayer(basemap);
+    basemapIdx++; basemapErrores = 0;
+    basemap = L.tileLayer(BASEMAPS[basemapIdx].url, BASEMAPS[basemapIdx].opts).addTo(map);
+    basemap.on('tileerror', onErr);
+  }
+});
 
 L.control.zoom({ position: 'bottomright' }).addTo(map);
 L.control.scale({ position: 'bottomleft', imperial: false }).addTo(map);
